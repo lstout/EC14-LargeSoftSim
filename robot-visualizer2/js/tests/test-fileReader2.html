@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Filereader Test 2</title>
+</head>
+<body>
+
+<input type="file" id="files" name="files[]" multiple />
+
+<script>
+    var layers = [];
+    var layersRaw = [];
+
+    function handleFileSelect(evt) {
+        var files = evt.target.files; // FileList object
+        for (var i = 0, f; f = files[i]; i++) {
+
+            var reader = new FileReader();
+
+            reader.onload = (function(theFile) {
+                return function(e) {
+                    var lines = e.target.result.split("\n");
+                    var goodLines = 0;
+                    for(var i in lines) {
+                        var line = lines[i];
+                        if (line.substr(0,7) == "<Layer>") {
+                            var layer = line.substr(7,100).split("");
+//                            console.log(layer);
+                            layers.push(layer);
+                            goodLines++;
+                        }
+                        if (goodLines == 10) {
+                            break;
+                        }
+                    }
+                };
+            })(f);
+
+            reader.readAsText(f);
+        }
+    }
+
+    document.getElementById('files').addEventListener('change', handleFileSelect, false);
+</script>
+</body>
+</html>

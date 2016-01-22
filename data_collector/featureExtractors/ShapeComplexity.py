@@ -1,12 +1,12 @@
 from __future__ import division
 
 from FeatureExtractorAbstract import FeatureExtractorAbstract
-from helpers.getVoxelData import VoxelData
+from ..helpers.getVoxelData import VoxelData
 from scipy.spatial import ConvexHull
 from scipy.ndimage import label
 import numpy as np
 import os
-from helpers.config import PathConfig
+from ..helpers.config import PathConfig
 
 
 class ShapeComplexity(FeatureExtractorAbstract):

@@ -1,5 +1,5 @@
 import os
-from helpers.config import PathConfig
+from config import PathConfig
 
 
 class GetAltFile():

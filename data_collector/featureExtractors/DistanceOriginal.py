@@ -1,6 +1,6 @@
 import os
 from FeatureExtractorAbstract import FeatureExtractorAbstract
-from helpers.getDistanceForTraceFile import TraceDistance
+from ..helpers.getDistanceForTraceFile import TraceDistance
 
 
 class DistanceOriginal(FeatureExtractorAbstract):

@@ -1,8 +1,8 @@
 from __future__ import division
 from FeatureExtractorAbstract import FeatureExtractorAbstract
-from helpers.getVoxelData import VoxelData
+from ..helpers.getVoxelData import VoxelData
 import os
-from helpers.config import PathConfig
+from ..helpers.config import PathConfig
 import math
 
 

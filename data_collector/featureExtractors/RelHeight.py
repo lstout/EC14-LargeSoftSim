@@ -1,7 +1,7 @@
 import os
 from FeatureExtractorAbstract import FeatureExtractorAbstract
-from helpers.config import PathConfig
-from helpers.distanceCalc import DistanceCalc
+from ..helpers.config import PathConfig
+from ..helpers.distanceCalc import DistanceCalc
 
 
 class RelHeight(FeatureExtractorAbstract):

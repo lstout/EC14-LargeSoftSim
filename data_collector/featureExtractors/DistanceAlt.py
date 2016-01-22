@@ -1,8 +1,8 @@
 import os
 from FeatureExtractorAbstract import FeatureExtractorAbstract
-from helpers.config import PathConfig
-from helpers.getDistanceForTraceFile import TraceDistance
-from helpers.getAltFile import GetAltFile
+from ..helpers.config import PathConfig
+from ..helpers.getDistanceForTraceFile import TraceDistance
+from ..helpers.getAltFile import GetAltFile
 
 class DistanceAlt(FeatureExtractorAbstract):
     def getCSVheader(self):

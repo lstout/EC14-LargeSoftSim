@@ -3,25 +3,8 @@ import glob
 import re
 import os
 import cPickle as pickle
-from featureExtractors.AbsoluteCellCountOriginal import AbsoluteCellCountOriginal
-from featureExtractors.RelativeCellCountOriginal import RelativeCellCountOriginal
-from featureExtractors.AbsoluteCellCountAlt import AbsoluteCellCountAlt
-from featureExtractors.RelativeCellCountAlt import RelativeCellCountAlt
-from featureExtractors.BasicInfo import BasicInfo
-from featureExtractors.DistanceAlt import DistanceAlt
-from featureExtractors.DistanceOriginal import DistanceOriginal
-from featureExtractors.MutProbability import MutProbability
-from featureExtractors.Lifetime import Lifetime
-from featureExtractors.SizeOnAxis import SizeOnAxis
-from featureExtractors.RelHeight import RelHeight
-from featureExtractors.MuscleLocation import MuscleLocation
-from featureExtractors.Symmetry import Symmetry
-from featureExtractors.Arc import Arc
-from featureExtractors.Monotony import Monotony
-from featureExtractors.Gait import Gait
-from featureExtractors.ShapeComplexity import ShapeComplexity
-from featureExtractors.CompositionComplexity import CompositionComplexity
-from helpers.config import PathConfig
+from data_collector.featureExtractors import *
+from data_collector.helpers.config import PathConfig
 
 __author__ = 'meta'
 
@@ -95,7 +78,8 @@ class DataCollector2:
             Monotony(),
             Gait(),
             ShapeComplexity(),
-            CompositionComplexity()
+            CompositionComplexity(),
+            Birthtime(),
         ]
         self.pickleLocation = os.path.dirname(
             os.path.realpath(__file__)) + os.path.sep + ".datacollector2-progress.pickle"

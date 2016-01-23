@@ -190,6 +190,8 @@ class DB():
         self.cur.execute("DROP TABLE IF EXISTS " + self.tablePrefix + "_firsttraces")
         self.cur.execute("DROP TABLE IF EXISTS " + self.tablePrefix + "_offspring")
         self.cur.execute("DROP TABLE IF EXISTS " + self.tablePrefix + "_jobs")
+        self.cur.execute("DROP TABLE IF EXISTS " + self.tablePrefix + "_mates")
+        
         self.cur.execute("SET sql_notes = 1")
         self.flush()
 

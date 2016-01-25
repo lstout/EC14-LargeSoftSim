@@ -19,7 +19,7 @@ class Gait(FeatureExtractorAbstract):
             filepath = experiment[2] + os.path.sep + PathConfig.traceFoldersAlt[type] + os.path.sep + indiv[
                 0] + ".trace"
             if not os.path.isfile(filepath):
-                return ['NA'] * 3
+                return ['NA'] * 6 
 
         with open(filepath) as fh:
             xs = []
@@ -46,7 +46,7 @@ class Gait(FeatureExtractorAbstract):
 
     @staticmethod
     def _getPeriod(signal):
-        if len(signal) == 0:
+        if len(signal) in [0,1]:
             return 'NA'
         signal = np.array(signal)
         fft = np.fft.rfft(signal).real

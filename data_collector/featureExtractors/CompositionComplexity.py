@@ -11,7 +11,10 @@ class CompositionComplexity(FeatureExtractorAbstract):
         return ['CompositionEntropy']
 
     def extract(self, experiment, type, indiv):
-        filepath = experiment[2] + os.path.sep + PathConfig.populationFolderNormal + os.path.sep + indiv[0] + "_vox.vxa"
+        if type == 'no disease':
+            filepath = experiment[2] + os.path.sep + PathConfig.populationFolderNormal + os.path.sep + indiv[0] + "_vox.vxa"
+        else:
+            filepath = experiment[2] + os.path.sep + PathConfig.populationFoldersAlt[type] + os.path.sep + indiv[0] + "_vox.vxa"
 
         if not os.path.isfile(filepath):
             return ['NA']

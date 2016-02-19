@@ -9,7 +9,7 @@ class FeatureExtractorAbstract:
         """
         raise NotImplementedError("FeatureExtractor %s doesn't implement getCSVheader()" % (self.__class__.__name__))
 
-    def extract(self, experiment, type, indiv):
+    def extract(self, experiment, type, indiv, arena_size):
         """ Does the actual extraction of one or multiple features
 
         :param experiment: triple with experiment number, name of the folder and relative path to the experiment folder

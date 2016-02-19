@@ -16,7 +16,7 @@ class ShapeComplexity(FeatureExtractorAbstract):
     def getCSVheader(self):
         return ['hullRatio','triangles', 'limbs', 'shapeComplexity']
 
-    def extract(self, experiment, type, indiv):
+    def extract(self, experiment, type, indiv, arena_size):
         filepath = experiment[2] + os.path.sep + PathConfig.populationFolderNormal + os.path.sep + indiv[0] + "_vox.vxa"
 
         if not os.path.isfile(filepath):

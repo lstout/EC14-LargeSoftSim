@@ -1,12 +1,9 @@
+import numpy as np
 import math
-
 
 class DistanceCalc:
     def __init__(self, **kwargs):
-        if "arenaSize" not in kwargs.keys():
-            self.arenaSize = (0.25, 0.25)
-        else:
-            self.arenaSize = kwargs["arenaSize"]
+        self.arenaSize = kwargs.get("arenaSize", (0.25, 0.25))
 
     def isValidLine(self, lineSplit):
         return len(lineSplit) == 5 and self.sameAsFloat(lineSplit[2]) and self.sameAsFloat(lineSplit[3])
@@ -15,58 +12,50 @@ class DistanceCalc:
         with open(filename, 'r') as inputFile:
             firstRun = True
             dist = 0
+            xs = []
+            ys = []
             for line in inputFile:
                 lineSplit = line.split("\t")
                 if not self.isValidLine(lineSplit):
                     lineSplit = line.split(" ")
                     if not self.isValidLine(lineSplit):
                         continue
-                if not firstRun:
-                    x_new = float(lineSplit[2])
-                    y_new = float(lineSplit[3])
-                    x_diff = x - x_new
-                    y_diff = y - y_new
-                    if abs(x_diff) >= self.arenaSize[0] * 0.8:
-                        if x_new > x:
-                            x_diff += self.arenaSize[0]
-                        else:
-                            x_diff -= self.arenaSize[0]
-                    if abs(y_diff) >= self.arenaSize[1] * 0.8:
-                        if y_new > y:
-                            y_diff += self.arenaSize[1]
-                        else:
-                            y_diff -= self.arenaSize[1]
-                    if type == "euclidean":
-                        dist += math.sqrt((x_diff ** 2) + (y_diff ** 2))
-                    if type == "manhattan":
-                        dist += math.fabs(x_diff) + math.fabs(y_diff)
 
-                x = float(lineSplit[2])
-                y = float(lineSplit[3])
-                firstRun = False
-            return dist
+                xs.append(float(lineSplit[2]))
+                ys.append(float(lineSplit[3]))
+
+            xs = np.array(xs)
+            ys = np.array(ys)
+            x_diff = np.fmin(np.abs(xs[:-1] - xs[1:]), self.arenaSize[0] - np.abs(xs[:-1] - xs[1:]))
+            y_diff = np.fmin(np.abs(ys[:-1] - ys[1:]), self.arenaSize[0] - np.abs(ys[:-1] - ys[1:]))
+            if type == 'euclidean':
+                return np.sqrt(x_diff**2 + y_diff**2).sum()
+            else:
+                return (x_diff + y_diff).sum()   
 
     def distanceTotal(self, filename, type):
         with open(filename, 'r') as inputFile:
+            
             firstRun = True
-            firstLine = []
-            lastLine = []
             lineSplit = []
             x_diffs_to_add = []
             y_diffs_to_add = []
-            goodline = None
+            lastLine = None
+            
             for line in inputFile:
                 lineSplit = line.split("\t")
                 if not self.isValidLine(lineSplit):
                     lineSplit = line.split(" ")
                     if not self.isValidLine(lineSplit):
                         continue
-                goodline = lineSplit
+                lastLine = lineSplit
                 if firstRun:
-                    firstLine = lineSplit
+                    first_x = x_new = float(lineSplit[2])
+                    first_y = y_new = float(lineSplit[3])
+                    firstRun = False
                 else:
-                    x_new = float(lineSplit[2])
-                    y_new = float(lineSplit[3])
+                    x, x_new = x_new, float(lineSplit[2])
+                    y, y_new = y_new, float(lineSplit[3])
                     x_diff = x - x_new
                     y_diff = y - y_new
                     if abs(x_diff) >= self.arenaSize[0] * 0.8:
@@ -80,23 +69,20 @@ class DistanceCalc:
                             diff_to_add = -diff_to_add
                         y_diffs_to_add.append(diff_to_add)
 
-                x = float(lineSplit[2])
-                y = float(lineSplit[3])
-                firstRun = False
-
-            if goodline is None:
+            if lastLine is None:
                 return 0
-            lastLine = goodline
-            x_final = float(lastLine[2]) + sum(x_diffs_to_add)
-            y_final = float(lastLine[3]) + sum(y_diffs_to_add)
+            last_x = float(lastLine[2])
+            last_y = float(lastLine[3])
+            x_final = last_x + sum(x_diffs_to_add)
+            y_final = last_y + sum(y_diffs_to_add)
 
-            x_diff = float(firstLine[2]) - x_final
-            y_diff = float(firstLine[3]) - y_final
+            x_diff = first_x - x_final
+            y_diff = first_y - y_final
 
             if type == "euclidean":
                 return math.sqrt((x_diff ** 2) + (y_diff ** 2))
             if type == "manhattan":
-                return math.fabs(x_diff) + math.fabs(y_diff)
+                return abs(x_diff) + abs(y_diff)
 
     @staticmethod
     def getBirthTime(filename):

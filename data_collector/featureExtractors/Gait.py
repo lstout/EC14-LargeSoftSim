@@ -12,7 +12,7 @@ class Gait(FeatureExtractorAbstract):
     def getCSVheader(self):
         return ["gaitPeriodX", "gaitErrorX", "gaitPeriodY", "gaitErrorY", "gaitPeriodZ", "gaitErrorZ"]
 
-    def extract(self, experiment, type, indiv):
+    def extract(self, experiment, type, indiv, arena_size):
         filepath = experiment[2] + os.path.sep + PathConfig.traceFolderNormal + os.path.sep + indiv[0] + ".trace"
 
         if not os.path.isfile(filepath):
@@ -36,18 +36,18 @@ class Gait(FeatureExtractorAbstract):
                 ys.append(linesplit[-2])
                 zs.append(linesplit[-1])
 	
-	xs = map(float,xs)
-	ys = map(float,ys)
-	zs = map(float,zs)
-	xPeriod, xError = self._getPeriod(xs)
-        yPeriod, yError = self._getPeriod(ys)
-	zPeriod, zError = self._getPeriod(zs)
+	    xs = map(float,xs)
+	    ys = map(float,ys)
+	    zs = map(float,zs)
+	    xPeriod, xError = self._getPeriod(xs)
+            yPeriod, yError = self._getPeriod(ys)
+	    zPeriod, zError = self._getPeriod(zs)
 	return xPeriod, xError, yPeriod, yError, zPeriod, zError
 
     @staticmethod
     def _getPeriod(signal):
         if len(signal) in [0,1]:
-            return 'NA'
+            return 'NA', 'NA'
         signal = np.array(signal)
         fft = np.fft.rfft(signal).real
         fft = fft[:len(fft) / 2 + 1]

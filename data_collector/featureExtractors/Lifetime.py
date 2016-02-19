@@ -8,7 +8,7 @@ class Lifetime(FeatureExtractorAbstract):
     def getCSVheader(self):
         return ['lifetime']
 
-    def extract(self, experiment, type, indiv):
+    def extract(self, experiment, type, indiv, arena_size):
         filepath = experiment[2] + os.path.sep + PathConfig.populationFolderNormal + os.path.sep + indiv[0] + "_vox.vxa"
         if os.path.isfile(filepath):
             vd = VoxelData(filepath)

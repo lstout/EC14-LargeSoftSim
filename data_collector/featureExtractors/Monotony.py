@@ -8,14 +8,14 @@ class Monotony(FeatureExtractorAbstract):
     def getCSVheader(self):
         return ['monotonyX', 'monotonyY']
 
-    def extract(self, experiment, type, indiv):
+    def extract(self, experiment, type, indiv, arena_size):
         filepath = experiment[2] + os.path.sep + PathConfig.traceFolderNormal + os.path.sep + indiv[0] + ".trace"
         dc = DistanceCalc()
         if not os.path.isfile(filepath):
             filepath = experiment[2] + os.path.sep + PathConfig.traceFoldersAlt[type] + os.path.sep + indiv[
                 0] + ".trace"
             if not os.path.isfile(filepath):
-                return ['NA']
+                return ['NA'] * 2
         with open(filepath, 'r') as inputFile:
             monotonyUp = 0
             monotonyDown = 0

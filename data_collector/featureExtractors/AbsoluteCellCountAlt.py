@@ -9,10 +9,10 @@ class AbsoluteCellCountAlt(FeatureExtractorAbstract):
     def getCSVheader(self):
         return ["absCellCountFatAlt", "absCellCountMuscleAlt", "absCellCountBoneAlt", "absCellCountAlt"]
 
-    def extract(self, experiment, type, indiv):
+    def extract(self, experiment, type, indiv, arena_size):
         noResultVal = ['NA'] * 4
         filepath = GetAltFile.getAltPopFile(experiment, type, indiv)
-        if filepath != False:
+        if filepath:
             vd = VoxelData(filepath)
             absCounts = vd.getAbsCounts()
             if not absCounts:

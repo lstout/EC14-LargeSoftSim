@@ -9,10 +9,10 @@ class RelativeCellCountAlt(FeatureExtractorAbstract):
     def getCSVheader(self):
         return ["relCellCountFatAlt", "relCellCountMuscleAlt", "relCellCountBoneAlt"]
 
-    def extract(self, experiment, type, indiv):
+    def extract(self, experiment, type, indiv, arena_size):
         noResultVal = ['NA', 'NA', 'NA']
         filepath = GetAltFile.getAltPopFile(experiment, type, indiv)
-        if filepath != False:
+        if filepath:
             vd = VoxelData(filepath)
             relCounts = vd.getRelCounts()
             if not relCounts:

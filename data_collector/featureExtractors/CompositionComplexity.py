@@ -10,7 +10,7 @@ class CompositionComplexity(FeatureExtractorAbstract):
     def getCSVheader(self):
         return ['CompositionEntropy']
 
-    def extract(self, experiment, type, indiv):
+    def extract(self, experiment, type, indiv, arena_size):
         if type == 'no disease':
             filepath = experiment[2] + os.path.sep + PathConfig.populationFolderNormal + os.path.sep + indiv[0] + "_vox.vxa"
         else:

@@ -17,10 +17,10 @@ class Arc(FeatureExtractorAbstract):
     def getCSVheader(self):
         return ['traceArcRadius', 'traceArcPercent']
 
-    def extract(self, experiment, type, indiv):
+    def extract(self, experiment, type, indiv, arena_size):
         errorReturnVal = ['NA'] * 2
         filepath = experiment[2] + os.path.sep + PathConfig.traceFolderNormal + os.path.sep + indiv[0] + ".trace"
-        dc = DistanceCalc()
+        dc = DistanceCalc(arenaSize = (arena_size['x'], arena_size['y']))
         if not os.path.isfile(filepath):
             filepath = experiment[2] + os.path.sep + PathConfig.traceFoldersAlt[type] + os.path.sep + indiv[
                 0] + ".trace"
@@ -43,9 +43,7 @@ class Arc(FeatureExtractorAbstract):
                     lineSplit = line.split(" ")
                     if not dc.isValidLine(lineSplit):
                         continue
-                traceLines.append(
-                    (float(lineSplit[2]), float(lineSplit[2]))
-                )
+                traceLines.append( (float(lineSplit[2]), float(lineSplit[2])) )
         if len(traceLines) < 6:
             return errorReturnVal
 

@@ -8,7 +8,7 @@ class AbsoluteCellCountOriginal(FeatureExtractorAbstract):
     def getCSVheader(self):
         return ["absCellCountFat", "absCellCountMuscle", "absCellCountBone", "absCellCount"]
 
-    def extract(self, experiment, type, indiv):
+    def extract(self, experiment, type, indiv, arena_size):
         noResultVal = ['NA'] * 4
         filepath = experiment[2] + os.path.sep + PathConfig.populationFolderNormal + os.path.sep + indiv[0] + "_vox.vxa"
         if os.path.isfile(filepath):

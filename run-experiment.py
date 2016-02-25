@@ -7,10 +7,10 @@ import sys
 import signal
 
 # import workers
-from db import DB
-import hyperneat_worker as hn
-import voxelyze_worker as vox
-import postprocessing_worker as pp
+from controller.db import DB
+import controller.hyperneat_worker as hn
+import controller.voxelyze_worker as vox
+import controller.postprocessing_worker as pp
 
 
 class EC14controller():

@@ -3,7 +3,7 @@ from FeatureExtractorAbstract import FeatureExtractorAbstract
 
 class BasicInfo(FeatureExtractorAbstract):
     def getCSVheader(self):
-        return ['Ind_ID', 'Exp_Num', 'Exp_type', 'Arena_size', 'Arena_size_x', 'Arena_size_y']
+        return ['Ind_ID', 'Exp_Num', 'Exp_type', 'Arena_Size', 'Arena_size_x', 'Arena_size_y']
 
     def extract(self, experiment, type, indiv, arena_size):
         if type == "no disease":

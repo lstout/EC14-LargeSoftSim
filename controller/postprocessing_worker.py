@@ -111,9 +111,7 @@ class PostprocessingWorker(threading.Thread):
 
             if (len(self.queue) > 0):
                 print 'PP:',map(self.getIDfromTrace,self.queue)
-                self.queue = sorted(self.queue, key=lambda id : int(self.getIDfromTrace(id)))
-                item = self.queue[0]
-                self.queue = self.queue[1:]
+                item = self.queue.pop()
                 if self.debug:
                     print "PP: working on id", item
                 self.markAsVoxelyzed(item)
@@ -162,9 +160,8 @@ class PostprocessingWorker(threading.Thread):
         :return: None
         """
         unprocessed = [os.path.join(path, f) for f in os.listdir(path) if os.path.isfile(os.path.join(path, f)) and f.endswith('.trace')]
-        for todo in unprocessed:
-            if todo not in self.queue:
-                self.addFile(todo)
+        self.queue |= unprocessed
+        return self.queue 
 
     def markAsVoxelyzed(self, todo):
         """ mark all the individuals as voxelyzed, i.e. as successfully processed by Voxelyze
@@ -173,7 +170,6 @@ class PostprocessingWorker(threading.Thread):
         """
         id = self.getIDfromTrace(todo)
         self.db.markAsVoxelyzed(id)
-        self.db.setJobDone(id)
 
     def markAsPostprocessed(self, todo):
         """ mark all the individuals as postprocessed, i.e. all offspring has been calculated, files have been moved and the individuals are basically done
@@ -224,7 +220,7 @@ class PostprocessingWorker(threading.Thread):
                         fertile = 0
                 traceLine = fileAsList[i].split()
                 traces.append([id, traceLine[1], traceLine[2], traceLine[3], traceLine[4], fertile])
-        if (len(traces) == 0):
+        if len(traces) == 0:
             print("PP-WARNING: individual {indiv} has 0 traces, so skipping... please check this though!".format(
                 len=len(traces), indiv=id))
         else:
@@ -368,6 +364,3 @@ class PostprocessingWorker(threading.Thread):
                         self.base_path + self.traces_after_pp_path + str(id) + ".trace")
         if os.path.isfile(indiv):
             os.remove(indiv)
-
-    def addFile(self, path):
-        self.queue.append(path)

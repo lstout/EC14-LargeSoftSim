@@ -57,10 +57,6 @@ class DB():
         self.connectionString = connectionString
         self.connect()
 
-    def test(self):
-        # TODO: test db connection
-        pass
-
     def close(self):
         self.con.close()
 
@@ -335,15 +331,28 @@ class DB():
         self.cur.execute(insertSting.format(name=name, cmd=cmd, indivs=indivs))
         self.flush()
 
-    def getJobsWaitingCount(self):
-        querySting = "SELECT COUNT(id) FROM " + self.tablePrefix + "_jobs WHERE done IS NULL;"
+    def finishJobs(self):
+        """
+        Finishes jobs that are completed
+        returns the number of jobs that are still running
+        """
+        querySting = "SELECT * FROM " + self.tablePrefix + "_jobs WHERE done IS NULL;"
         self.cur.execute(querySting)
         result = self.cur.fetchall()
-        return result[0]['COUNT(id)']
-
-    def setJobDone(self, indiv):
-        querySting = "UPDATE " + self.tablePrefix + "_jobs SET done=NOW() WHERE individuals LIKE '%,{indiv},%';"
-        self.cur.execute(querySting.format(indiv=indiv))
+        remaining = 0
+        for job in result:
+            for ind in job['individuals'].split(','):
+                querySting = "SELECT * FROM " + self.tablePrefix + "_jobs WHERE done IS NULL;"
+                self.cur.execute(querySting)
+                result = self.cur.fetchone()
+                if results['voxelyzed']:
+                    remaining += 1
+                    break
+            else:
+                querySting = "UPDATE " + self.tablePrefix + "_jobs SET done=1  WHERE id IS " + str(job['id']) +";"
+                self.cur.execute(querySting)
+        
+        return remaining
 
     def getLastInsertID(self):
         self.cur.execute("SELECT LAST_INSERT_ID();")

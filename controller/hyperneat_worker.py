@@ -79,21 +79,19 @@ class HNWorker(threading.Thread):
         """
         waitCounter = 0
         startTime = time.time()
-        todos = []
+        todos = set()
         while not self.stopRequest.isSet() and waitCounter < self.max_waiting_time:
             newTodos = self.checkForTodos()
-            for newTodo in newTodos:
-                if newTodo not in todos:
-                    todos.append(newTodo)
+            todos |= newTodos
 
             if len(todos) > 0:
-                todoTmp = todos[:self.queue_len]
+                for _ in range(min(self.queue_length, len(todos))):
+                    todoTmp.append(self.queue.pop())
                 if self.debug:
                     print("HN: found " + str(len(todoTmp)) + " todos")
                 self.execHN(todoTmp)
                 self.preprocessBeforeVox(todoTmp)
                 waitCounter = 0
-                todos = todos[self.queue_len:]
             else:
                 if self.debug:
                     print("HN: found no todos")
@@ -148,9 +146,6 @@ class HNWorker(threading.Thread):
                 self.runHN(indiv, str(indiv))
                 print("HN: finished mutating individual: " + str(indiv))
 
-            # TODO (later): error check the hyperneat output
-
-        pass
 
     def preprocessBeforeVox(self, todos):
         """ run all the freshly-generated individuals through preprocessing to place them in an arena etc.
@@ -166,13 +161,12 @@ class HNWorker(threading.Thread):
                 continue
             if self.debug:
                 print("HN: preprocessing individual " + str(indiv))
-            if (os.path.isfile(self.hn_path + str(indiv) + self.suffix_vox)):
-                shutil.copy2(self.hn_path + str(indiv) + self.suffix_vox, self.pl_path + str(indiv) + self.suffix_vox)
-                shutil.move(self.hn_path + str(indiv) + self.suffix_vox, self.pop_path + str(indiv) + self.suffix_vox)
-                self.calculateLifetime(indiv)
-                if self.mutate:
-                    self.atrophyMuscles(indiv)
-                #TODO self.db.calculatedLifetime(indiv)
+            shutil.copy2(self.hn_path + str(indiv) + self.suffix_vox, self.pl_path + str(indiv) + self.suffix_vox)
+            shutil.move(self.hn_path + str(indiv) + self.suffix_vox, self.pop_path + str(indiv) + self.suffix_vox)
+            if self.mutate:
+                self.atrophyMuscles(indiv)
+            self.calculateLifetime(indiv)
+            
             if (os.path.isfile(self.hn_path + str(indiv) + self.suffix_genome)):
                 shutil.copy2(self.hn_path + str(indiv) + self.suffix_genome, self.pop_path + str(indiv) + self.suffix_genome)
             if (os.path.isfile(self.hn_path + self.hn_trash_file.format(indiv))):
@@ -185,7 +179,6 @@ class HNWorker(threading.Thread):
                 os.remove(self.hn_path + f)
 
         self.db.flush()
-        pass
 
     def calculateLifetime(self,indiv):
         """Calculates and edits an individual's lifetime based on its genome
@@ -233,7 +226,6 @@ class HNWorker(threading.Thread):
         probability = (count_soft / 1000) * 0.5 # or 0.0005 * count_soft
 
 
-        dna_list = ""
         for layer in layers:
             dna_list = list(layer.text.strip())
             position_to_check = 0
@@ -242,14 +234,6 @@ class HNWorker(threading.Thread):
                 if tissue == '3' or tissue == '4':
                     if random.random() <= probability:
                         dna_list[index] = '2'
-                        #print "Atrophied a muscle at index " + str(index) + " to " + str(dna_list[index]) + "."
-                    else:
-                        #print "Muscle at index " + str(index) + " unchanged."
-                        pass
-
-                else:
-                    continue
-
             layer.text = "".join(dna_list)
         try:
             tree.write(self.pop_path + str(indiv) + self.suffix_vox)
@@ -273,5 +257,3 @@ class HNWorker(threading.Thread):
             print ("HN: during HN execution there was an error:")
             print (str(e.returncode))
             quit()
-            # TODO: better error handling, but so far, we dont allow HN to fail -
-            # TODO: and if it fails, we can check the logs immediately

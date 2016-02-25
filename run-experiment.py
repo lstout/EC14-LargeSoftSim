@@ -27,7 +27,6 @@ class EC14controller():
     hnWorker = None
     voxWorker = None
     ppWorker = None
-    newExperiment = False
     pop_size = 0
     pop_random = 0
     pop_random_start_end = (0, 0)
@@ -37,9 +36,6 @@ class EC14controller():
     arena_type = ""
     config = None
     path_prefix = "~/EC14-Exp-"
-    mailer = False
-    mailer_subject = "Experiment {exp_name} done"
-    mailer_content = "Experiment {exp_name} successfully completed. Total population: {pop_total}"
     walltime_name = "walltime"
     spaceTolerance = 0.01
 
@@ -122,14 +118,9 @@ class EC14controller():
 
         self.pause_time = self.config.getint('Workers', 'pause_time')
 
-        self.mailer = self.config.getboolean('Mailer', 'mailer')
-        self.mailer_content = self.config.get('Mailer', 'content')
-        self.mailer_subject = self.config.get('Mailer', 'subject')
-
 
     def isNewExperiment(self):
         self.base_path = os.path.expanduser(self.path_prefix + self.exp_name) + "/"
-        print(self.base_path)
         if not os.path.isdir(self.base_path):
             return True
         return False
@@ -144,7 +135,6 @@ class EC14controller():
             self.createPopulaton()
 
     def launchWorkers(self):
-        # launch workers
         self.hnWorker = hn.HNWorker(self.dbParams, self.configPath)
         self.hnWorker.start()
         self.voxWorker = vox.VoxWorker(self.dbParams, self.configPath)
@@ -180,30 +170,8 @@ class EC14controller():
             unfinished = self.db.getUnfinishedIndividuals()
             if unfinished == 0:
                 print("nothing left to do, quiting")
-                if (self.mailer):
-                    self.sendFinishedMail()
                 self.clean_exit()
             time.sleep(self.pause_time)
-
-        #self.resubmit()
-
-    def resubmit(self):
-        logPrefix = "main.run{n}".format(n=self.run + 1)
-        logPath = self.base_path + "logs/" + logPrefix
-        cwd = os.path.dirname(os.path.realpath(__file__))
-
-        cmd = "qsub -o {logpath}.output.log -e {logpath}.error.log -l {walltime_name}={walltime} -v " + \
-              "config={config},run={run},cwd={cwd} {cwd}/scripts/main-resub.sh"
-
-        qsub = subprocess.Popen(cmd.format(logpath=logPath,
-                                           walltime=self.wall_time,
-                                           walltime_name=self.walltime_name,
-                                           config=self.configPath,
-                                           run=self.run + 1,
-                                           cwd=cwd),
-                                shell=True,
-                                stdout=subprocess.PIPE).communicate()[0]
-        print("MAIN: resubmitted myself as:" + str(qsub) )
 
     def keyboard_exit(self, signal, frame):
         print("\n-------------\nreceived CTRL+C... exiting gracefully.\n-------------\n")
@@ -214,14 +182,6 @@ class EC14controller():
         self.voxWorker.join()
         self.ppWorker.join()
         sys.exit(0)
-
-    def sendFinishedMail(self):
-        pop_total = self.db.getPopulationTotal()
-        subject = self.mailer_subject.format(exp_name=self.exp_name, pop_total=pop_total)
-        content = self.mailer_content.format(exp_name=self.exp_name, pop_total=pop_total)
-        mailer_cmd = "echo '{content}' | mail -s '{subject}' $USER".format(content=content, subject=subject)
-        subprocess.Popen(mailer_cmd, shell=True)
-
 
 ctrl = EC14controller()
 ctrl.start()

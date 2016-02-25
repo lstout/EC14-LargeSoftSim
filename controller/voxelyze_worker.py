@@ -3,6 +3,7 @@ import os
 import re
 import subprocess
 import threading, time
+import random
 from db import DB
 
 
@@ -13,8 +14,8 @@ class VoxWorker(threading.Thread):
     config = ConfigParser.RawConfigParser()
     pause_time = 2
     queue_length = 12
-    queue = []
-    queue_sent = []
+    queue = set()
+    queue_sent = set() 
     max_waiting_time = 60 * 60  # 60seconds * 60min = 1 hour in seconds
     queue_force_submit_time = 20  # after 10 minutes just submit the queue as it is
     base_path = ""
@@ -37,6 +38,7 @@ class VoxWorker(threading.Thread):
         self.path_prefix = self.config.get('Experiment', 'path_prefix')
         self.debug = self.config.get('Experiment', 'debug')
         self.base_path = os.path.expanduser(self.path_prefix + self.exp_name) + "/"
+        
         self.queue_force_submit_time = self.config.getint('Voxelyze', 'queue_force_submit_time')
         self.voxelyze_cmd = self.config.get('Voxelyze', 'voxelyze_cmd')
         self.voxelyze_stepping = self.config.getint('Voxelyze', 'voxelyze_stepping')
@@ -46,6 +48,7 @@ class VoxWorker(threading.Thread):
         self.pop_path = self.config.get('Voxelyze', 'pop_path')
         self.pool_filename = self.config.get('Voxelyze', 'pool_filename')
         self.pool_path = self.config.get('Voxelyze', 'pool_path')
+        
         self.pause_time = self.config.getint('Workers', 'pause_time')
         self.queue_length = self.config.getint('Workers', 'queue_len')
         self.max_waiting_time = self.config.getint('Workers', 'max_waiting_time')
@@ -102,17 +105,12 @@ class VoxWorker(threading.Thread):
     def addToQueue(self, todos):
         new = 0
         for todo in todos:
-            if not todo in self.queue and not todo in self.queue_sent:
-                self.queue.append(todo)
+            if not todo in self.queue_sent:
+                self.queue.add(todo)
                 new += 1
-        if (new > 0):
-            if self.debug:
-                print("VOX: found " + str(new) + " new individuals.")
-            return True
-        else:
-            if self.debug:
-                print("VOX: found nothing new")
-            return False
+        if self.debug:
+            print("VOX: found " + str(new) + " new individuals.")
+        return new > 0
 
     def processQueue(self, forced=False):
         """ adds elements to the to-be-voxelyzed queue
@@ -120,20 +118,17 @@ class VoxWorker(threading.Thread):
         :param forced: boolean true in case the queue has to be flushed (queued items waiting for too long)
         :return: None
         """
-        if len(self.queue) >= self.queue_length or forced:
+        q_len = len(self.queue)
+        if q_len >= self.queue_length or forced:
             if self.debug:
-                print ("vox: got " + str(
-                    len(self.queue)) + " individuals in queue. Sending them to the Lisa queue to be voxelyzed")
-            self.sendQueue(self.queue[:self.queue_length])
+                print ("vox: got " + str(q_len) +
+                        " individuals in queue. Sending them to the Lisa queue to be voxelyzed")
+            queue_to_send = []
+            for _ in range(min(self.queue_length, q_len)):
+                queue_to_send.append(self.queue.pop())
 
-            if not forced:
-                # now splice them apart, move the sent id into a separate list
-                self.queue_sent += self.queue[:self.queue_length]
-                self.queue = self.queue[self.queue_length:]  # keep only the first N elements in list
-            else:
-                # just purge everything
-                self.queue_sent += self.queue
-                self.queue = []
+            self.sendQueue(queue_to_send)
+            self.queue_sent |= queue_to_send
         else:
             if self.debug:
                 print("VOX: queue not full yet, waiting for more before submitting")
@@ -194,8 +189,6 @@ class VoxWorker(threading.Thread):
             print ("Vox: during submit.sh execution there was an error:")
             print (str(e.returncode))
             quit()
-            # TODO: better error handling, but so far, we dont allow submit.sh to fail -
-            # TODO: and if it fails, we can check the logs immediately
 
     def splitOutputIntoJobname(self, output):
         match = self.qreturn_pattern.match(output)
@@ -205,7 +198,6 @@ class VoxWorker(threading.Thread):
                   " to the lisa queue didn't return an expected format: ")
             print(output)
             print("...while we expected something like 1234.batch1.lisa.surfsara.nl")
-            return "0"
         else:
             return match.group(1)
 

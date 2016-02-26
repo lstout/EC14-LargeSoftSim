@@ -87,7 +87,7 @@ class VoxWorker(threading.Thread):
             if not addedSomethingNew:
                 if self.debug:
                     print("VOX: sleeping now for " + str(self.pause_time) + "s")
-                time.sleep(self.pause_time * 1000)
+                time.sleep(self.pause_time)
         # TODO: final steps after kill signal
         print ("Thread: got exit signal")
 

@@ -1,3 +1,3 @@
 #!/bin/sh
 cd ${cwd}
-python ./run_experiment.py ${config} ${run}
+python run-experiment.py ${config} ${run}

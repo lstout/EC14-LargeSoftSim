@@ -94,6 +94,7 @@ class EC14controller():
             self.db.createIndividual(birth, x, y)
 
     def readConfig(self, filename):
+        print filename
         self.config.read(filename)
         self.dbString = self.config.get('DB', 'db_string')
 

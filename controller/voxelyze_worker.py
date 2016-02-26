@@ -109,6 +109,7 @@ class VoxWorker(threading.Thread):
                 new += 1
         if self.debug:
             print("VOX: found " + str(new) + " new individuals.")
+        print new, new > 0
         return new > 0
 
     def processQueue(self, forced=False):

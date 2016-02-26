@@ -58,7 +58,13 @@ class HNWorker(threading.Thread):
         self.energy_unit = self.config.getfloat('Lifetimes', 'energy_unit')
         self.starting_energy = self.config.getfloat('Lifetimes', 'starting_energy')
 
-        self.mutate = self.config.getboolean('Mutation', 'mutate')
+        self.disease = self.config.getboolean('Disease', 'disease')
+        indiv_prob_fn = self.config.get('Disease', 'indiv_function')
+        self.indiv_prob_fn = getattr(disease_functions, indiv_prob_fn)
+        cell_prob_fn = self.config.get('Disease', 'cell_function')
+        self.cell_prob_fn = getattr(disease_functions, cell_prob_fn)
+
+
 
 
     def __init__(self, dbParams, config_path):
@@ -155,20 +161,26 @@ class HNWorker(threading.Thread):
         if self.debug:
             print("HN: preprocessing")
         for indiv in todos:
-            if (not os.path.isfile(self.hn_path + str(indiv) + self.suffix_vox)):
+            indiv_hn = self.hn_path + str(indiv) + self.suffix_vox
+            indiv_pop = self.pop_path + str(indiv) + self.suffix_vox
+            indiv_pl = self.pl_path + str(indiv) + self.suffix_vox
+            if (not os.path.isfile(indiv_hn)):
                 print ("HH: individual " + str(indiv) + " born dead")
                 self.db.markAsDead(indiv)
                 continue
             if self.debug:
                 print("HN: preprocessing individual " + str(indiv))
-            shutil.copy2(self.hn_path + str(indiv) + self.suffix_vox, self.pl_path + str(indiv) + self.suffix_vox)
-            shutil.move(self.hn_path + str(indiv) + self.suffix_vox, self.pop_path + str(indiv) + self.suffix_vox)
-            if self.mutate:
-                self.atrophyMuscles(indiv)
+            shutil.copy2(indiv_hn, indiv_pl)
+            shutil.move(indiv_hn, indiv_pop)
+
+            if self.disease
+                disease_functions.apply_disease(indiv_pop, self.indiv_prob_fn, self.cell_prob_fn)
+
             self.calculateLifetime(indiv)
             
-            if (os.path.isfile(self.hn_path + str(indiv) + self.suffix_genome)):
-                shutil.copy2(self.hn_path + str(indiv) + self.suffix_genome, self.pop_path + str(indiv) + self.suffix_genome)
+            if (os.path.isfile(indiv_hn)):
+                shutil.copy2(indiv_hn, indiv_pop)
+
             if (os.path.isfile(self.hn_path + self.hn_trash_file.format(indiv))):
                 os.remove(self.hn_path + self.hn_trash_file.format(indiv))
 
@@ -210,36 +222,6 @@ class HNWorker(threading.Thread):
         except:
             print 'HN (ERROR): Could not write to', self.pop_path + str(indiv) + self.suffix_vox
         
-    def atrophyMuscles(self,indiv):
-        """Mutates muscle tissue voxels according to some probability in each layer
-        """
-        tree = ET.ElementTree(file=self.pop_path + str(indiv) + self.suffix_vox) #file="./population/" + dna_file
-        root = tree.getroot()
-        layers = root.find('VXC').find('Structure').find('Data').findall('Layer')
-
-        """Calculates probability based on amount of fat tissue
-        """
-        dna = ""
-        for layer in layers:
-            dna += str(layer.text).strip()
-        count_soft = dna.count('1')
-        probability = (count_soft / 1000) * 0.5 # or 0.0005 * count_soft
-
-
-        for layer in layers:
-            dna_list = list(layer.text.strip())
-            position_to_check = 0
-            for index in range(len(dna_list)):
-                tissue = dna_list[index]
-                if tissue == '3' or tissue == '4':
-                    if random.random() <= probability:
-                        dna_list[index] = '2'
-            layer.text = "".join(dna_list)
-        try:
-            tree.write(self.pop_path + str(indiv) + self.suffix_vox)
-        except:
-            print 'HN (ERROR): Could not write to', self.pop_path + str(indiv) + self.suffix_vox
-
     def runHN(self, indiv, hn_params):
         """ run hyperneat with its parameters
         :param hn_params: string with either 0, 1 or 2 parents, just the IDs (no file suffix), separated by a space

@@ -102,15 +102,13 @@ class VoxWorker(threading.Thread):
         super(VoxWorker, self).join(timeout)
 
     def addToQueue(self, todos):
-        new = 0
-        for todo in todos:
+        before = len(self.queue)
+	for todo in todos:
             if not todo in self.queue_sent:
                 self.queue.add(todo)
-                new += 1
         if self.debug:
-            print("VOX: found " + str(new) + " new individuals.")
-        print new, new > 0
-        return new > 0
+            print "VOX: found", len(self.queue) - before, "new individuals."
+        return (len(self.queue) - before) > 0
 
     def processQueue(self, forced=False):
         """ adds elements to the to-be-voxelyzed queue

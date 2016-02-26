@@ -12,8 +12,8 @@ class VoxWorker(threading.Thread):
     """
 
     config = ConfigParser.RawConfigParser()
-    pause_time = 2
-    queue_length = 12
+    pause_time = 5
+    queue_length = 10
     queue = set()
     queue_sent = set() 
     max_waiting_time = 60 * 60  # 60seconds * 60min = 1 hour in seconds
@@ -87,8 +87,7 @@ class VoxWorker(threading.Thread):
             if not addedSomethingNew:
                 if self.debug:
                     print("VOX: sleeping now for " + str(self.pause_time) + "s")
-                self.stopRequest.wait(self.pause_time)
-
+                time.sleep(self.pause_time * 1000)
         # TODO: final steps after kill signal
         print ("Thread: got exit signal")
 
@@ -128,7 +127,7 @@ class VoxWorker(threading.Thread):
                 queue_to_send.append(self.queue.pop())
 
             self.sendQueue(queue_to_send)
-            self.queue_sent |= queue_to_send
+            self.queue_sent |= set(queue_to_send)
         else:
             if self.debug:
                 print("VOX: queue not full yet, waiting for more before submitting")

@@ -25,7 +25,7 @@ class PostprocessingWorker(threading.Thread):
     traces_after_pp_path = "traces_afterPP/"
     debug = False
     db = None
-    queue = []
+    queue = set()
     vox_preamble = 8  # number of lines that voxelyze adds before the actual output in a trace file
     config = ConfigParser.RawConfigParser()
     arena_x = 0
@@ -130,7 +130,7 @@ class PostprocessingWorker(threading.Thread):
                 waitCounter += time.time() - startTime
                 startTime = time.time()
 
-                jobsRunning = self.db.getJobsWaitingCount()
+                jobsRunning = self.db.finishJobs()
 
                 if (self.debug):
                     print("PP: {n} jobs currently waiting in LISA queue...".format(n=jobsRunning))
@@ -160,7 +160,7 @@ class PostprocessingWorker(threading.Thread):
         :return: None
         """
         unprocessed = [os.path.join(path, f) for f in os.listdir(path) if os.path.isfile(os.path.join(path, f)) and f.endswith('.trace')]
-        self.queue |= unprocessed
+        self.queue |= set(unprocessed)
         return self.queue 
 
     def markAsVoxelyzed(self, todo):

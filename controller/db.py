@@ -320,13 +320,10 @@ class DB():
     def addJob(self, name, cmd, individuals=[]):
         name = name.replace("'", "\\'")
         cmd = cmd.replace("'", "\\'")
-        indivs = ""
-        indivsAsString = []
-        for indiv in individuals:
-            indivsAsString.append(str(indiv))
-        if (len(indivsAsString) > 0):
-            indivs = "," + ",".join(
-                indivsAsString) + ","  # the comma at beginning and end are important, see self.setJobDone
+        if len(individuals):
+            indivs = ",".join(map(str,individuals))
+        else:
+            indives = ''
         insertSting = "INSERT INTO " + self.tablePrefix + "_jobs VALUES (NULL, '{name}', '{cmd}', NOW(), NULL, '{indivs}');"
         self.cur.execute(insertSting.format(name=name, cmd=cmd, indivs=indivs))
         self.flush()
@@ -336,21 +333,23 @@ class DB():
         Finishes jobs that are completed
         returns the number of jobs that are still running
         """
-        querySting = "SELECT * FROM " + self.tablePrefix + "_jobs WHERE done IS NULL;"
-        self.cur.execute(querySting)
+        queryString = "SELECT * FROM " + self.tablePrefix + "_jobs WHERE done IS NULL;"
+        self.cur.execute(queryString)
         result = self.cur.fetchall()
         remaining = 0
         for job in result:
             for ind in job['individuals'].split(','):
-                querySting = "SELECT * FROM " + self.tablePrefix + "_jobs WHERE done IS NULL;"
-                self.cur.execute(querySting)
+                if ind == u'':
+                    continue 
+                queryString = "SELECT * FROM " + self.tablePrefix + "_individuals WHERE id = " + ind + ";"
+                self.cur.execute(queryString)
                 result = self.cur.fetchone()
-                if results['voxelyzed']:
+                if not result['voxelyzed']:
                     remaining += 1
                     break
             else:
-                querySting = "UPDATE " + self.tablePrefix + "_jobs SET done=1  WHERE id IS " + str(job['id']) +";"
-                self.cur.execute(querySting)
+                queryString = "UPDATE " + self.tablePrefix + "_jobs SET done=NOW()  WHERE id = " + str(job['id']) +";"
+                self.cur.execute(queryString)
         
         return remaining
 

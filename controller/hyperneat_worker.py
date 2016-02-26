@@ -6,9 +6,7 @@ import threading, time, subprocess, os
 from db import DB
 import random
 import xml.etree.cElementTree as ET
-# except ImportError:
-#     import xml.etree.ElementTree as ET
-
+import disease_functions
 
 class HNWorker(threading.Thread):
     """ Thread for HyperNEAT worker... runs until cancelled or till max waiting time
@@ -88,11 +86,12 @@ class HNWorker(threading.Thread):
         todos = set()
         while not self.stopRequest.isSet() and waitCounter < self.max_waiting_time:
             newTodos = self.checkForTodos()
-            todos |= newTodos
+            todos |= set(newTodos)
 
             if len(todos) > 0:
+                todoTmp = []
                 for _ in range(min(self.queue_length, len(todos))):
-                    todoTmp.append(self.queue.pop())
+                    todoTmp.append(todos.pop())
                 if self.debug:
                     print("HN: found " + str(len(todoTmp)) + " todos")
                 self.execHN(todoTmp)
@@ -173,7 +172,7 @@ class HNWorker(threading.Thread):
             shutil.copy2(indiv_hn, indiv_pl)
             shutil.move(indiv_hn, indiv_pop)
 
-            if self.disease
+            if self.disease:
                 disease_functions.apply_disease(indiv_pop, self.indiv_prob_fn, self.cell_prob_fn)
 
             self.calculateLifetime(indiv)

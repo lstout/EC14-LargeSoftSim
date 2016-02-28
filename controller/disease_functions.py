@@ -48,6 +48,10 @@ def default_prob_per_fat(dna):
 def double_prob_per_fat(dna):
     return (dna == 1).sum() * 0.01
 
+def very_high_prob_per_fat(dna):
+    return (dna == 1).sum() * 0.05
+
+
 def apply_disease(fp, indiv_func = mutate_all, cell_fun = default_prob_per_fat):
         """
         Mutates muscle tissue voxels according to some probability in each layer

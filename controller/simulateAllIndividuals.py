@@ -35,6 +35,7 @@ class IndivSimulator(Skeletor):
         self.simPath = os.path.abspath(sys.argv[1]) + "/"
 
     def readConfig(self, filename):
+        print self.configPath 
         Skeletor.readConfig(self, self.configPath)
         self.traces_after_pp_path = self.config.get('Postprocessing', 'traces_after_pp_path')
         if self.base_path in self.simPath:
@@ -52,13 +53,13 @@ class IndivSimulator(Skeletor):
             os.makedirs(self.pool_path)
         if not os.path.exists(self.logs_path):
             os.makedirs(self.logs_path)
-        outQueue = []
         files = os.listdir(self.pop_path)
         files = sorted([f.split('_')[0] for f in files], key=lambda f : int(f))
-        for outQ in files[::16]:
+        chunks= (files[i:i+16] for i in xrange(0, len(files), 16))
+        for outQ in chunks:
             print "submitting:"
-            print " ,".join(outQueue) + "\n\n"
-            self.sendQueue(outQueue)
+            print " ,".join(outQ) + "\n\n"
+            self.sendQueue(outQ)
 
     def getLastPoolFile(self):
         if self.lastPoolFile == 0:  # this means is hasn't been set

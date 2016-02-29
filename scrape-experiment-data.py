@@ -222,7 +222,7 @@ if __name__ == "__main__":
         quit()
 
     pattern = '../EC14-Exp-*'
-    limit = 1e6
+    limit = int(1e6)
     con = False
     
     outputFile = sys.argv[1]

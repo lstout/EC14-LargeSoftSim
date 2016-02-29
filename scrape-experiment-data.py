@@ -21,25 +21,10 @@ This script can be run standalone with 2 optional command line parameters:
 
 class DataCollector2:
     def __init__(self, pattern, outputFile, limit, cont):
-        if not pattern:
-            self.pattern = '../EC14-Exp-*'
-        else:
-            self.pattern = pattern
-
-        if not outputFile:
-            self.outputFile = 'data.csv'
-        else:
-            self.outputFile = outputFile
-
-        if not limit:
-            self.limit = 99999
-        else:
-            self.limit = int(limit)
-
-        if not cont:
-            self.cont = False
-        else:
-            self.cont = True
+        self.pattern = pattern
+        self.outputFile = outputFile
+        self.limit = limit
+        self.cont = cont
 
         print "Using the following parmeters:\n" \
               "pattern: {pattern}\n" \
@@ -52,14 +37,7 @@ class DataCollector2:
             cont=self.cont
         )
 
-        self.experimentsDone = []
-        self.rowCount = 0
-        self.headers = []
-        self.headersWritten = False
-        self.writer = False
-        self.outputFileHandle = False
         self.previousPercentDone = 0
-        self.expNumberRegex = re.compile('([0-9]+)$')
 
         self.featureExtractors = [
             BasicInfo(),
@@ -79,85 +57,83 @@ class DataCollector2:
             Monotony(),
             Gait(),
             ShapeComplexity(),
-            CompositionComplexity(),
+            TissueComplexity(),
             Birthtime(),
         ]
         self.pickleLocation = os.path.dirname(
-            os.path.realpath(__file__)) + os.path.sep + ".datacollector2-progress.pickle"
+            os.path.realpath(__file__)) + os.path.sep + "progress.pickle"
 
     def getExperiments(self):
         expFolders = glob.glob(self.pattern)
-        output = [(self.getExpNumber(os.path.basename(expFolder)),
-                   os.path.basename(expFolder),
+        output = [(os.path.basename(expFolder),
                    expFolder) for expFolder in expFolders if os.path.isdir(expFolder)]
         return output
 
-    def getExpNumber(self, haystack):
-        m = self.expNumberRegex.search(haystack)
-        if m is not None:
-            return m.group(1)
-        else:
-            return haystack
-
     def collectData(self):
         experiments = self.getExperiments()
+        experimentsDone = self.loadProgress()
+        print experimentsDone
+        self.printHeaders()        
+
         print "I found the following experiments: \n", [exp[0] for exp in experiments]
         if self.cont:
-            experiments = self.filterExperimentsIfContinue(experiments)
-            print "Because the 'continue' flag was set, I will only parse the following\n" \
-                  " experiments (because I think I already did the other ones before):\n", \
+            experiments = self.filterExperiments(experiments, experimentsDone)
+            print "I will only parse the following experiments :\n", \
                 [exp[0] for exp in experiments]
+
+        row_count = 0 
         for exp in experiments:
             type = self.getType(exp)
             arena_size = self.getArenaSize(exp)
-            # print exp[0],type
             individuals = self.getIndividuals(exp)
             print "parsing experiment {exp} (type: {type}) with {indivs} individuals".format(
                 exp=exp[0],
                 type=type,
                 indivs=len(individuals)
             )
-            count = 0
-            for indiv in individuals[:self.limit]:
-                features = self.getFeatures(exp, type, indiv, arena_size)
-                self.writeFeatures(features)
-                count += 1
+            features = [] 
+            for count, indiv in enumerate(individuals[:self.limit]):
+                features.append( self.getFeatures(exp, type, indiv, arena_size) )
                 self.printExperimentProgress(min(len(individuals), self.limit), count)
-            self.saveProgress(exp)
+            self.writeFeatures(features)
+            experimentsDone = self.saveProgress(exp, experimentsDone)
+            row_count += len(individuals[:self.limit])
 
-        self.closeFile()
-        print "wrote {} lines to {}".format(self.rowCount, self.outputFile)
+        print "wrote {} lines to {}".format(row_count, self.outputFile)
 
-    def saveProgress(self, experiment):
-        self.experimentsDone.append(experiment)
-        if os.path.isfile(self.pickleLocation):
-            os.remove(self.pickleLocation)
-        pickle.dump(self.experimentsDone, open(self.pickleLocation, "wb"))
+    def saveProgress(self, experiment, experimentsDone):
+        experimentsDone.append(experiment)
+        pickle.dump(experimentsDone, open(self.pickleLocation, "wb"))
+        return experimentsDone
 
     def loadProgress(self):
-        self.experimentsDone = pickle.load(open(self.pickleLocation, "rb"))
+        try:
+            return pickle.load(open(self.pickleLocation, "r+"))
+        except (EOFError, IOError) as e:
+            print type(e), e
+            return []
 
-    def filterExperimentsIfContinue(self, experiments):
-        self.loadProgress()
-        out = [experiment for experiment in experiments if experiment not in self.experimentsDone]
+    def filterExperiments(self, experiments, experimentsDone):
+        out = [experiment for experiment in experiments if experiment not in experimentsDone]
+        #print out
         return out
 
     def getIndividuals(self, experiment):
-        indivs = glob.glob(experiment[2] + os.path.sep + PathConfig.populationFolderNormal + os.path.sep + "*.vxa")
+        indivs = glob.glob(experiment[1] + os.path.sep + PathConfig.populationFolderNormal + os.path.sep + "*.vxa")
         output = [(os.path.basename(indiv).split("_")[0], indiv) for indiv in indivs]
         output.sort(key=lambda x: int(x[0]))
         return output
 
     def getType(self, experiment):
         # if the alternative population DOES have a disease then the main experiment DIDN'T have a disease
-        if self.hasAltPopWithDisease(experiment):
-            if not self.hasAltPopWithoutDisease(experiment):
+        if self.hasAltPop(experiment, "with disease"):
+            if not self.hasAltPop(experiment, "no disease"):
                 return "with disease"
             else:
                 self.errorHasBothPopFiles(experiment)
         # if the alternative population DOESN'T have a disease then the main experiment DID have a disease
-        if self.hasAltPopWithoutDisease(experiment):
-            if not self.hasAltPopWithDisease(experiment):
+        if self.hasAltPop(experiment,"no disease"):
+            if not self.hasAltPop(experiment, "with disease"):
                 return "no disease"
             else:
                 self.errorHasBothPopFiles(experiment)
@@ -166,7 +142,7 @@ class DataCollector2:
 
     def getArenaSize(self, experiment):
         arena_size = {}
-        with open(experiment[2] + "/config/config.ini") as fh:
+        with open(experiment[1] + "/config/config.ini") as fh:
             cp = ConfigParser.RawConfigParser()
             cp.readfp(fh)
             x = cp.getfloat('Arena', 'x')
@@ -179,18 +155,10 @@ class DataCollector2:
                 arena_size['name'] = 'unknown'
             arena_size['x'] = x
             arena_size['y'] = y
-
-
         return arena_size
 
-    def hasAltPopWithoutDisease(self, experiment):
-        return self.hasAltPop(experiment, "no disease")
-
-    def hasAltPopWithDisease(self, experiment):
-        return self.hasAltPop(experiment, "with disease")
-
     def hasAltPop(self, experiment, condition):
-        altPopPath = experiment[2] + os.path.sep + PathConfig.populationFoldersAlt[condition]
+        altPopPath = experiment[1] + os.path.sep + PathConfig.populationFoldersAlt[condition]
         if not os.path.isdir(altPopPath):
             return False
         if len(os.listdir(altPopPath)) > 0:
@@ -211,29 +179,24 @@ class DataCollector2:
             self.previousPercentDone = percentDone
 
     def writeFeatures(self, features):
-        if not self.headersWritten:
-            self.headers = self.getFeatureHeader()
-            writeOption = "wb"
-            if self.cont:
-                writeOption = "ab"
-            self.outputFileHandle = open(self.outputFile, writeOption)
-            self.writer = csv.DictWriter(self.outputFileHandle, fieldnames=self.headers)
-            if not self.cont:
-                self.writer.writeheader()
-            self.headersWritten = True
-        self.rowCount += 1
-        rowDict = dict(zip(self.headers, features))
-        self.writer.writerow(rowDict)
-
-    def closeFile(self):
-        if not not self.outputFileHandle:
-            self.outputFileHandle.close()
-
-    def getFeatureHeader(self):
-        output = []
-        for feature in self.featureExtractors:
-            output += feature.getCSVheader()
-        return output
+        with open(self.outputFile, 'a') as fh:
+            for f in features:
+                f = map(str, f)
+                fh.write(",".join(f) + "\n")
+            
+    def printHeaders(self):
+        headers = [header for feature in self.featureExtractors for header in feature.getCSVheader()]
+        headersString = ','.join(headers)
+        headerNotWritten = False
+        with open(self.outputFile, "a+") as fh:
+            fh.seek(0)
+            l = fh.readline().strip()
+            if not headersString == l:
+                headerNotWritten = True
+        if headerNotWritten:
+            with open(self.outputFile, "w") as fh:
+                fh.write(headersString + "\n")
+        return headers 
 
     @staticmethod
     def errorHasBothPopFiles(experiment):
@@ -258,18 +221,17 @@ if __name__ == "__main__":
         print docString
         quit()
 
-    pattern = False
-    outputFile = False
-    limit = False
+    pattern = '../EC14-Exp-*'
+    limit = 1e6
     con = False
-    if len(sys.argv) >= 2:
-        outputFile = sys.argv[1]
+    
+    outputFile = sys.argv[1]
     if len(sys.argv) >= 3:
         pattern = sys.argv[2]
         if pattern.lower() == "null" or pattern.lower() == "false":
             pattern = False
     if len(sys.argv) >= 4:
-        limit = sys.argv[3]
+        limit = int(sys.argv[3])
     if len(sys.argv) == 5:
         cont = sys.argv[4]
         if cont.lower() in ["cont", "continue", "c", "true", "y"]:

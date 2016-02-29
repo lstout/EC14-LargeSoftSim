@@ -8,7 +8,7 @@ class GetAltFile():
     def getAltTraceFile(experiment, type, indiv):
         conf = PathConfig()
         tPath = conf.traceFoldersAlt[type]
-        filepath = experiment[2] + os.path.sep + "{}" + os.path.sep + indiv[0] + ".trace"
+        filepath = experiment[1] + os.path.sep + "{}" + os.path.sep + indiv[0] + ".trace"
         if os.path.isfile(filepath.format(tPath)):
             return filepath.format(tPath)
         else:
@@ -22,7 +22,7 @@ class GetAltFile():
     def getAltPopFile(experiment, type, indiv):
         conf = PathConfig()
         tPath = conf.populationFoldersAlt[type]
-        filepath = experiment[2] + os.path.sep + "{}" + os.path.sep + indiv[0] + "_vox.vxa"
+        filepath = experiment[1] + os.path.sep + "{}" + os.path.sep + indiv[0] + "_vox.vxa"
         if os.path.isfile(filepath.format(tPath)):
             return filepath.format(tPath)
         else:

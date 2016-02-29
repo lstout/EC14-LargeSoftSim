@@ -19,10 +19,10 @@ class Arc(FeatureExtractorAbstract):
 
     def extract(self, experiment, type, indiv, arena_size):
         errorReturnVal = ['NA'] * 2
-        filepath = experiment[2] + os.path.sep + PathConfig.traceFolderNormal + os.path.sep + indiv[0] + ".trace"
+        filepath = experiment[1] + os.path.sep + PathConfig.traceFolderNormal + os.path.sep + indiv[0] + ".trace"
         dc = DistanceCalc(arenaSize = (arena_size['x'], arena_size['y']))
         if not os.path.isfile(filepath):
-            filepath = experiment[2] + os.path.sep + PathConfig.traceFoldersAlt[type] + os.path.sep + indiv[
+            filepath = experiment[1] + os.path.sep + PathConfig.traceFoldersAlt[type] + os.path.sep + indiv[
                 0] + ".trace"
             if not os.path.isfile(filepath):
                 return errorReturnVal

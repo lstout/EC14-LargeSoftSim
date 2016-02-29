@@ -10,7 +10,7 @@ class SizeOnAxis(FeatureExtractorAbstract):
         return ['sizeXmax', 'sizeYmax', 'sizeZmax', 'sizeXmin', 'sizeYmin', 'sizeZmin']
 
     def extract(self, experiment, variant, indiv, arena_size):
-        filepath = experiment[2] + os.path.sep + PathConfig.populationFolderNormal + os.path.sep + indiv[0] + "_vox.vxa"
+        filepath = experiment[1] + os.path.sep + PathConfig.populationFolderNormal + os.path.sep + indiv[0] + "_vox.vxa"
 
         if os.path.isfile(filepath):
             vd = VoxelData(filepath)

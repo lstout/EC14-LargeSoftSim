@@ -15,6 +15,6 @@ from Arc import Arc
 from Monotony import Monotony
 from Gait import Gait
 from ShapeComplexity import ShapeComplexity
-from CompositionComplexity import CompositionComplexity
+from TissueComplexity import TissueComplexity
 from Birthtime import Birthtime
 

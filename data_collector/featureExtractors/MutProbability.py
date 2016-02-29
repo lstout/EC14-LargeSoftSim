@@ -9,7 +9,7 @@ class MutProbability(FeatureExtractorAbstract):
         return ['probability']
 
     def extract(self, experiment, type, indiv, arena_size):
-        filepath = experiment[2] + os.path.sep + PathConfig.populationFolderNormal + os.path.sep + indiv[0] + "_vox.vxa"
+        filepath = experiment[1] + os.path.sep + PathConfig.populationFolderNormal + os.path.sep + indiv[0] + "_vox.vxa"
         if os.path.isfile(filepath):
             vd = VoxelData(filepath)
             absCounts = vd.getAbsCounts()

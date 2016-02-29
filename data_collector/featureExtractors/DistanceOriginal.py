@@ -8,7 +8,7 @@ class DistanceOriginal(FeatureExtractorAbstract):
         return ['euclideanStep', 'manhattanStep', 'euclideanTotal', 'manhattanTotal']
 
     def extract(self, experiment, type, indiv, arena_size):
-        filepath = experiment[2] + os.path.sep + "traces_afterPP" + os.path.sep + indiv[0] + ".trace"
+        filepath = experiment[1] + os.path.sep + "traces_afterPP" + os.path.sep + indiv[0] + ".trace"
         if os.path.isfile(filepath):
             dc = DistanceCalc(arenaSize = (arena_size['x'], arena_size['y']))
             distEuclideanStep = dc.distanceStep(filepath, "euclidean")

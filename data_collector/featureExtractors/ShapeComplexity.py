@@ -17,7 +17,7 @@ class ShapeComplexity(FeatureExtractorAbstract):
         return ['hullRatio','triangles', 'limbs', 'shapeComplexity']
 
     def extract(self, experiment, type, indiv, arena_size):
-        filepath = experiment[2] + os.path.sep + PathConfig.populationFolderNormal + os.path.sep + indiv[0] + "_vox.vxa"
+        filepath = experiment[1] + os.path.sep + PathConfig.populationFolderNormal + os.path.sep + indiv[0] + "_vox.vxa"
 
         if not os.path.isfile(filepath):
             return ['NA'] * 4

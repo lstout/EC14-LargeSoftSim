@@ -5,11 +5,10 @@ import math
 from skeleton import Skeletor
 
 
-class IndivSimulater(Skeletor):
+class IndivSimulator(Skeletor):
 
     def __init__(self):
         Skeletor.__init__(self, False)
-        self.individual = "0"
         self.simPath = ""
         self.traces_after_vox_path = "traces_afterVox/"
         self.traces_after_pp_path = "traces_afterPP/"
@@ -31,9 +30,9 @@ class IndivSimulater(Skeletor):
                 "The vxa files have to be in a subfolder called 'population'.")
             quit()
 
-        self.configPath = sys.argv[1]
+        self.configPath = sys.argv[2]
         self.configPath = os.path.abspath(self.configPath)
-        self.simPath = os.path.abspath(sys.argv[2]) + "/"
+        self.simPath = os.path.abspath(sys.argv[1]) + "/"
 
     def readConfig(self, filename):
         Skeletor.readConfig(self, self.configPath)
@@ -47,7 +46,6 @@ class IndivSimulater(Skeletor):
         self.traces_after_vox_path = self.simPath + self.traces_after_vox_path
 
     def simulate(self):
-        print "1"
         if not os.path.exists(self.traces_after_vox_path):
             os.makedirs(self.traces_after_vox_path)
         if not os.path.exists(self.pool_path):
@@ -56,22 +54,10 @@ class IndivSimulater(Skeletor):
             os.makedirs(self.logs_path)
         outQueue = []
         files = os.listdir(self.pop_path)
-        files.sort()
-        for file in files:
-            if file.endswith(".vxa"):
-                fileSplit = file.split("_")
-                fileTrace = self.traces_after_vox_path + fileSplit[0] + ".trace"
-                if os.path.isfile(fileTrace) and os.path.getsize(fileTrace) > 0:
-                    continue
-                outQueue.append(fileSplit[0])
-                if (len(outQueue) == 12):
-                    print "submitting:"
-                    print "\n".join(outQueue) + "\n\n"
-                    self.sendQueue(outQueue)
-                    outQueue = []
-        if (len(outQueue) > 0):
+        files = sorted([f.split('_')[0] for f in files], key=lambda f : int(f))
+        for outQ in files[::16]:
             print "submitting:"
-            print "\n".join(outQueue) + "\n\n"
+            print " ,".join(outQueue) + "\n\n"
             self.sendQueue(outQueue)
 
     def getLastPoolFile(self):
@@ -132,7 +118,7 @@ class IndivSimulater(Skeletor):
 
 
 if __name__ == "__main__":
-    insim = IndivSimulater()
+    insim = IndivSimulator()
     insim.start()
     insim.simulate()
 

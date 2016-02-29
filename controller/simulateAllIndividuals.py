@@ -21,7 +21,7 @@ class IndivSimulator(Skeletor):
         self.voxelyze_stepping = 100
         self.voxelyze_cmd = "{id}"
         self.voxelyze_walltime = 1000
-        self.submit_script = "scripts/submit.sh"
+        self.submit_script = "controller/scripts/submit.sh"
 
     def handleParams(self):
         if len(sys.argv) != 3:

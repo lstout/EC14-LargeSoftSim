@@ -64,7 +64,9 @@ class DataCollector2:
             os.path.realpath(__file__)) + os.path.sep + "progress.pickle"
 
     def getExperiments(self):
+	print self.pattern
         expFolders = glob.glob(self.pattern)
+        print expFolders
         output = [(os.path.basename(expFolder),
                    expFolder) for expFolder in expFolders if os.path.isdir(expFolder)]
         return output
@@ -72,7 +74,6 @@ class DataCollector2:
     def collectData(self):
         experiments = self.getExperiments()
         experimentsDone = self.loadProgress()
-        print experimentsDone
         self.printHeaders()        
 
         print "I found the following experiments: \n", [exp[0] for exp in experiments]

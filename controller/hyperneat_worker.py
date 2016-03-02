@@ -210,9 +210,6 @@ class HNWorker(threading.Thread):
         count_active = dna.count('3') + dna.count('4')
         count_length = count_empty + count_soft + count_hard + count_active
 
-        if dna_length != count_length:
-            print "DNA length count error!"
-
         lifetime = self.energy_unit * (self.starting_energy - ((count_soft * self.cost_soft) + (count_active * self.cost_muscle)))
 
         root.find('Simulator').find('StopCondition').find('StopConditionValue').text = str(lifetime)

@@ -1,8 +1,9 @@
 import numpy as np
 import os
 from FeatureExtractorAbstract import FeatureExtractorAbstract
-from ..helpers.config import PathConfig
+from ..helpers.pathConfig import PathConfig
 from ..helpers.distanceCalc import DistanceCalc
+from ..helpers.utilities import get_before_after_trace
 
 
 class Gait(FeatureExtractorAbstract):
@@ -12,43 +13,23 @@ class Gait(FeatureExtractorAbstract):
     def getCSVheader(self):
         return ["gaitPeriodX", "gaitErrorX", "gaitPeriodY", "gaitErrorY", "gaitPeriodZ", "gaitErrorZ"]
 
-    def extract(self, experiment, type, indiv, arena_size):
-        filepath = experiment[1] + os.path.sep + PathConfig.traceFolderNormal + os.path.sep + indiv[0] + ".trace"
+    def extract(self, args):
+        if args['exp_type'] == 'no disease':
+            traces = args['tracesBefore']
+        else:
+            traces = args['tracesAfter']
 
-        if not os.path.isfile(filepath):
-            filepath = experiment[1] + os.path.sep + PathConfig.traceFoldersAlt[type] + os.path.sep + indiv[
-                0] + ".trace"
-            if not os.path.isfile(filepath):
-                return ['NA'] * 6 
+        if traces == []:
+            return ['NA'] * 6
 
-        with open(filepath) as fh:
-            xs = []
-            ys = []
-            zs = []
-            for line in fh:
-                linesplit = line.split("\t")
-                if not self.dc.isValidLine(linesplit):
-                    linesplit = line.split(" ")
-                    if not self.dc.isValidLine(linesplit):
-                        continue
+        xPeriod, xError = self.getPeriod(traces[1,:])
+        yPeriod, yError = self.getPeriod(traces[2,:])
+        zPeriod, zError = self.getPeriod(traces[3,:])
+	return [xPeriod, xError, yPeriod, yError, zPeriod, zError]
 
-                xs.append(linesplit[-3])
-                ys.append(linesplit[-2])
-                zs.append(linesplit[-1])
-	
-	    xs = map(float,xs)
-	    ys = map(float,ys)
-	    zs = map(float,zs)
-	    xPeriod, xError = self._getPeriod(xs)
-            yPeriod, yError = self._getPeriod(ys)
-	    zPeriod, zError = self._getPeriod(zs)
-	return xPeriod, xError, yPeriod, yError, zPeriod, zError
-
-    @staticmethod
-    def _getPeriod(signal):
+    def getPeriod(self, signal):
         if len(signal) in [0,1]:
             return 'NA', 'NA'
-        signal = np.array(signal)
         fft = np.fft.rfft(signal).real
         fft = fft[:len(fft) / 2 + 1]
         fft[1:] = fft[1:] / (len(signal)/2)

@@ -1,21 +1,20 @@
 import os
 from FeatureExtractorAbstract import FeatureExtractorAbstract
-from ..helpers.config import PathConfig
-from ..helpers.getVoxelData import VoxelData
+from ..helpers.pathConfig import PathConfig
+from ..helpers.voxelData import VoxelData
+from ..helpers.utilities import get_before_after_vox
 
 
 class Lifetime(FeatureExtractorAbstract):
     def getCSVheader(self):
         return ['lifetime']
 
-    def extract(self, experiment, type, indiv, arena_size):
-        filepath = experiment[1] + os.path.sep + PathConfig.populationFolderNormal + os.path.sep + indiv[0] + "_vox.vxa"
-        if os.path.isfile(filepath):
-            vd = VoxelData(filepath)
-            lifetime = vd.getLifeTime()
-            if not lifetime:
-                return ['NA']
-            return [lifetime]
-
+    def extract(self, args):
+        if args['exp_type'] == 'no disease':
+            vd = args['voxelBefore']
         else:
+            vd = args['voxelAfter']
+        lifetime = vd.getLifeTime()
+        if not lifetime:
             return ['NA']
+        return [lifetime]

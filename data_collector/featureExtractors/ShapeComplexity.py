@@ -1,13 +1,8 @@
 from __future__ import division
-
 from FeatureExtractorAbstract import FeatureExtractorAbstract
-from ..helpers.getVoxelData import VoxelData
 from scipy.spatial import ConvexHull
 from scipy.ndimage import label
 import numpy as np
-import os
-from ..helpers.config import PathConfig
-
 
 class ShapeComplexity(FeatureExtractorAbstract):
     
@@ -16,21 +11,21 @@ class ShapeComplexity(FeatureExtractorAbstract):
     def getCSVheader(self):
         return ['hullRatio','triangles', 'limbs', 'shapeComplexity']
 
-    def extract(self, experiment, type, indiv, arena_size):
-        filepath = experiment[1] + os.path.sep + PathConfig.populationFolderNormal + os.path.sep + indiv[0] + "_vox.vxa"
-
-        if not os.path.isfile(filepath):
-            return ['NA'] * 4
-        vd = VoxelData(filepath)
+    def extract(self, args):
+        if args['voxelBefore'].isValid:
+            vd = args['voxelBefore']
+        elif args['voxelAfter'].isValid:
+            vd = args['voxelAfter']
+        else:
+            return ['NA']
         dnaMatrix = vd.getDNAmatrix().astype(int)
         ratio, triangles = self.calc_complexity(dnaMatrix)
         limbs = self.calc_limbs(dnaMatrix)
 
-        ratio_norm = ratio                               # No normalization because values are already 0..1
-        triangles_norm = (triangles - 12) / (70 - 12)    # Normalization according to the data used to generate PCAvector
-        limbs_norm = (limbs - 1) / (5 - 1)               # Normalization according to the data used to generate PCAvector
+        triangles_norm = (triangles - 12) / (70 - 12)    # Normalization
+        limbs_norm = (limbs - 1) / (5 - 1)               # Normalization
 
-        shapeComplexity = np.dot(self.PCAvector,np.array([ratio_norm, triangles_norm, limbs_norm]))
+        shapeComplexity = np.dot(self.PCAvector,np.array([ratio, triangles_norm, limbs_norm]))
 
         return [ratio, triangles, limbs, shapeComplexity]
 
@@ -43,23 +38,37 @@ class ShapeComplexity(FeatureExtractorAbstract):
         tets = hull.points[simplices]
         return np.sum(tetrahedron_volume(tets[:, 0], tets[:, 1],
                                      tets[:, 2], tets[:, 3]))
-
+    
+    def create_points(self, points, dnaMatrix):
+        tmp = []
+        new_points = set()         
+        dnaMatrix = dnaMatrix.astype(bool)
+        for x,y,z in points:
+            add = False
+            for x_d, y_d, z_d in [[1,0,0],[-1,0,0],[0,1,0],[0,-1,0],[0,0,1],[0,0,-1]]:
+                try:
+                    if not dnaMatrix[x+x_d, y+y_d, z+z_d]:
+                        add = True
+                        break
+                except IndexError:
+                    add = True
+                    break
+            if add:
+                new_points.add((x+0.5, y+0.5, z+0.5))
+                new_points.add((x+0.5, y+0.5, z-0.5))
+                new_points.add((x+0.5, y-0.5, z+0.5))
+                new_points.add((x+0.5, y-0.5, z-0.5))
+                new_points.add((x-0.5, y+0.5, z+0.5))
+                new_points.add((x-0.5, y+0.5, z-0.5))
+                new_points.add((x-0.5, y-0.5, z+0.5))
+                new_points.add((x-0.5, y-0.5, z-0.5))
+        
+        new_points = np.array(list(new_points))
+        return new_points
 
     def calc_complexity(self, dnaMatrix):
         points = np.squeeze(np.dstack((dnaMatrix.nonzero())))
-        new_points = [] 
-        for p in points:
-            new_points.append([p[0]+0.5, p[1]+0.5, p[2]+0.5])
-            new_points.append([p[0]+0.5, p[1]+0.5, p[2]-0.5])
-            new_points.append([p[0]+0.5, p[1]-0.5, p[2]+0.5])
-            new_points.append([p[0]+0.5, p[1]-0.5, p[2]-0.5])
-            new_points.append([p[0]-0.5, p[1]+0.5, p[2]+0.5])
-            new_points.append([p[0]-0.5, p[1]+0.5, p[2]-0.5])
-            new_points.append([p[0]-0.5, p[1]-0.5, p[2]+0.5])
-            new_points.append([p[0]-0.5, p[1]-0.5, p[2]-0.5])
-
-        new_points = np.array(new_points)
-        
+        new_points = self.create_points(points, dnaMatrix)
         hull = ConvexHull(new_points, qhull_options='FA')
         volume = self.volume_hull(hull)
         ratio = 1-(len(points)/volume)
@@ -77,11 +86,15 @@ class ShapeComplexity(FeatureExtractorAbstract):
         
         if not np.any(m):
             return m
-    
-        for x in range(max(0,centroid[0]-radius), min(10,centroid[0]+radius+1)):
-            for y in range(max(0,centroid[1]-radius), min(10,centroid[1]+radius+1)):
-                for z in range(max(0,centroid[2]-radius), min(10,centroid[1]+radius+1)):
-                    m[x,y,z] = 0
+
+        x_start = max(0,centroid[0]-radius)
+        x_end =  min(10,centroid[0]+radius+1)
+        y_start = max(0,centroid[1]-radius)
+        y_end =  min(10,centroid[1]+radius+1)
+        z_start = max(0,centroid[2]-radius)
+        z_end =  min(10,centroid[2]+radius+1)
+
+        m[x_start:x_end,y_start:y_end,z_start:z_end] = 0
         return m
     
     def find_islands(self, dnaMatrix):

@@ -1,22 +1,21 @@
-import os
-import types
+from __future__ import division
 import numpy as np
 import itertools as it
 from FeatureExtractorAbstract import FeatureExtractorAbstract
-from ..helpers.config import PathConfig
-from ..helpers.getVoxelData import VoxelData
+from ..helpers.pathConfig import PathConfig
+from ..helpers.voxelData import VoxelData
+from ..helpers.utilities import get_before_after_vox
 
 
 class MuscleLocation(FeatureExtractorAbstract):
     def getCSVheader(self):
         return ['muscleBottom', 'muscleTop', 'muscleCenter', 'muscleOuter', 'muscleCenterRel', 'muscleOuterRel']
 
-    def extract(self, experiment, variant, indiv, arena_size):
-        filepath = experiment[1] + os.path.sep + PathConfig.populationFolderNormal + os.path.sep + indiv[0] + "_vox.vxa"
-
-        if not os.path.isfile(filepath):
-            return ['NA'] * 6
-        vd = VoxelData(filepath)
+    def extract(self, args):
+        if args['exp_type'] == 'no disease':
+            vd = args['voxelBefore']
+        else:
+            vd = args['voxelAfter']
         dnaMatrix = vd.getDNAmatrix()
         if dnaMatrix is False:
             return ['NA'] * 6
@@ -35,15 +34,14 @@ class MuscleLocation(FeatureExtractorAbstract):
         outerIdx = zip(*it.product([0,1,8,9], [0,1,8,9], [0,1,8,9]))
         outer = dnaMatrix[outerIdx]        
 
-        muscleOuter = np.sum(np.logical_or(outer == 3, outer == 4))
+        muscleOuter = int(np.sum(np.logical_or(outer == 3, outer == 4)))
+        muscleTotal = int(np.sum(np.logical_or(dnaMatrix == 3, dnaMatrix == 4)))
 
-        muscleTotal = np.sum(np.logical_or(dnaMatrix == 3, dnaMatrix == 4))
-
-        if muscleTotal > 0:
-            muscleCenterRel = float(muscleCenter) / muscleTotal
-            muscleOuterRel = float(muscleOuter) / muscleTotal
+        if muscleTotal:
+            muscleCenterRel = muscleCenter / muscleTotal
+            muscleOuterRel = muscleOuter / muscleTotal
         else:
-            muscleCenterRel = 0.0
-            muscleOuterRel = 0.0
+            muscleCenterRel = float('inf')
+            muscleOuterRel = float('inf')
 
         return [muscleBottom, muscleTop, muscleCenter, muscleOuter, muscleCenterRel, muscleOuterRel]

@@ -1,4 +1,4 @@
-class FeatureExtractorAbstract:
+class FeatureExtractorAbstract(object):
     """ Template class for feature extractors
     """
 
@@ -9,12 +9,10 @@ class FeatureExtractorAbstract:
         """
         raise NotImplementedError("FeatureExtractor %s doesn't implement getCSVheader()" % (self.__class__.__name__))
 
-    def extract(self, experiment, type, indiv, arena_size):
+    def extract(self, args):
         """ Does the actual extraction of one or multiple features
 
-        :param experiment: triple with experiment number, name of the folder and relative path to the experiment folder
-        :param type: sting, ["with disease"|"no disease"]
-        :param indiv: tuple with individual ID and path to the population vxa file
+        :param args: a dictionary with all info on the experiment/individual
         :return: list of feature values
         """
         raise NotImplementedError("FeatureExtractor %s doesn't implement extract()" % (self.__class__.__name__))

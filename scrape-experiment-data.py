@@ -4,8 +4,9 @@ import re
 import os
 import cPickle as pickle
 from data_collector.featureExtractors import *
-from data_collector.helpers.config import PathConfig
+from data_collector.helpers.pathConfig import PathConfig
 import ConfigParser
+from data_collector.helpers.utilities import get_voxels, get_traces
 
 __author__ = 'meta'
 
@@ -41,20 +42,12 @@ class DataCollector2:
 
         self.featureExtractors = [
             BasicInfo(),
-            MutProbability(),
+            Disease(),
             Lifetime(),
-            DistanceOriginal(),
-            DistanceAlt(),
-            AbsoluteCellCountOriginal(),
-            RelativeCellCountOriginal(),
-            AbsoluteCellCountAlt(),
-            RelativeCellCountAlt(),
-            SizeOnAxis(),
-            RelHeight(),
+            Distance(),
+            AbsoluteCellCount(),
+            RelativeCellCount(),
             MuscleLocation(),
-            Symmetry(),
-            Arc(),
-            Monotony(),
             Gait(),
             ShapeComplexity(),
             TissueComplexity(),
@@ -64,37 +57,45 @@ class DataCollector2:
             os.path.realpath(__file__)) + os.path.sep + "progress.pickle"
 
     def getExperiments(self):
-	print self.pattern
-        expFolders = glob.glob(self.pattern)
-        print expFolders
-        output = [(os.path.basename(expFolder),
-                   expFolder) for expFolder in expFolders if os.path.isdir(expFolder)]
+        expFolders = glob.glob(os.path.expanduser(self.pattern))
+        output = [(expFolder.split('/')[-1] , expFolder) 
+                for expFolder in expFolders if os.path.isdir(expFolder)]
         return output
 
     def collectData(self):
         experiments = self.getExperiments()
         experimentsDone = self.loadProgress()
-        self.printHeaders()        
 
         print "I found the following experiments: \n", [exp[0] for exp in experiments]
         if self.cont:
             experiments = self.filterExperiments(experiments, experimentsDone)
             print "I will only parse the following experiments :\n", \
                 [exp[0] for exp in experiments]
+        else:
+            os.remove(self.outputFile)
+        self.printHeaders() 
+        
 
         row_count = 0 
         for exp in experiments:
-            type = self.getType(exp)
+            exp_type = self.getType(exp)
             arena_size = self.getArenaSize(exp)
             individuals = self.getIndividuals(exp)
-            print "parsing experiment {exp} (type: {type}) with {indivs} individuals".format(
+            print "parsing experiment {exp} (type: {exp_type}) with {indivs} individuals".format(
                 exp=exp[0],
-                type=type,
+                exp_type=exp_type,
                 indivs=len(individuals)
             )
             features = [] 
+            args = {}
+            args['exp_type'] = exp_type
+            args['exp'] = exp
             for count, indiv in enumerate(individuals[:self.limit]):
-                features.append( self.getFeatures(exp, type, indiv, arena_size) )
+                args['indiv'] = indiv
+                args['arena_size'] = arena_size
+                args['voxelBefore'], args['voxelAfter'] = get_voxels(args)
+                args['tracesBefore'], args['tracesAfter'] = get_traces(args)
+                features.append( self.getFeatures(args) )
                 self.printExperimentProgress(min(len(individuals), self.limit), count)
             self.writeFeatures(features)
             experimentsDone = self.saveProgress(exp, experimentsDone)
@@ -116,7 +117,6 @@ class DataCollector2:
 
     def filterExperiments(self, experiments, experimentsDone):
         out = [experiment for experiment in experiments if experiment not in experimentsDone]
-        #print out
         return out
 
     def getIndividuals(self, experiment):
@@ -166,11 +166,8 @@ class DataCollector2:
             return True
         return False
 
-    def getFeatures(self, experiment, type, indiv, arena_size):
-        output = []
-        for feature in self.featureExtractors:
-            output += feature.extract(experiment, type, indiv, arena_size)
-        return output
+    def getFeatures(self, args):
+        return [f for feature in self.featureExtractors for f in feature.extract(args)]
 
     def printExperimentProgress(self, total, current):
         percentDone = round(100 * current * 1.0 / total)

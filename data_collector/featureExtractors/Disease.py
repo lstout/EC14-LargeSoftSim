@@ -17,9 +17,11 @@ class Disease(FeatureExtractorAbstract):
         dnaMatrix = vd.getDNAmatrix().astype(int)
         if type(dnaMatrix) == bool and not dnaMatrix:
             return ['NA'] * 3
-        cell_fn_name = get_config_attr(args['exp'][1], "Disease", "cell_function")
-        indiv_fn_name = get_config_attr(args['exp'][1], "Disease", "indiv_function")        
-        if not cell_fn_name:
+        try:
+            cell_fn_name = args['config'].get("Disease", "cell_function")
+            indiv_fn_name = args['config'].get("Disease", "indiv_function")        
+        except Exception as e:
+            print type(e), e
             return ['NA'] * 3
         try:
             cell_fn = getattr(disease, cell_fn_name)

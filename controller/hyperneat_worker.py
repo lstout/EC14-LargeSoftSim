@@ -173,6 +173,7 @@ class HNWorker(threading.Thread):
             shutil.move(indiv_hn, indiv_pop)
 
             if self.disease:
+                print 'HN: DISEAAAAASE', self.indiv_prob_fn, self.cell_prob_fn
                 disease_functions.apply_disease(indiv_pop, self.indiv_prob_fn, self.cell_prob_fn)
 
             self.calculateLifetime(indiv)

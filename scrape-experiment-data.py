@@ -52,6 +52,7 @@ class DataCollector2:
             ShapeComplexity(),
             TissueComplexity(),
             Birthtime(),
+            Cost(),
         ]
         self.pickleLocation = os.path.dirname(
             os.path.realpath(__file__)) + os.path.sep + "progress.pickle"
@@ -79,7 +80,6 @@ class DataCollector2:
         row_count = 0 
         for exp in experiments:
             exp_type = self.getType(exp)
-            arena_size = self.getArenaSize(exp)
             individuals = self.getIndividuals(exp)
             print "parsing experiment {exp} (type: {exp_type}) with {indivs} individuals".format(
                 exp=exp[0],
@@ -90,9 +90,10 @@ class DataCollector2:
             args = {}
             args['exp_type'] = exp_type
             args['exp'] = exp
+            args['config'] = self.getConfig(args)
+            args['arena_size'] = self.getArenaSize(args['config'])        
             for count, indiv in enumerate(individuals[:self.limit]):
                 args['indiv'] = indiv
-                args['arena_size'] = arena_size
                 args['voxelBefore'], args['voxelAfter'] = get_voxels(args)
                 args['tracesBefore'], args['tracesAfter'] = get_traces(args)
                 features.append( self.getFeatures(args) )
@@ -140,22 +141,26 @@ class DataCollector2:
                 self.errorHasBothPopFiles(experiment)
         # if neither is the case, then there are no population files for this experiment... abort
         self.errorHasNoPop(experiment)
-
-    def getArenaSize(self, experiment):
-        arena_size = {}
-        with open(experiment[1] + "/config/config.ini") as fh:
+    
+    def getConfig(self, args):
+        with open(args['exp'][1] + "/config/config.ini") as fh:
             cp = ConfigParser.RawConfigParser()
             cp.readfp(fh)
-            x = cp.getfloat('Arena', 'x')
-            y = cp.getfloat('Arena', 'y')
-            if x == 0.25 and y == 0.25:
-                arena_size['name'] = 'small'
-            elif x == 0.5 and y == 0.5:
-                arena_size['name'] = 'big'
-            else:
-                arena_size['name'] = 'unknown'
-            arena_size['x'] = x
-            arena_size['y'] = y
+        return cp
+
+
+    def getArenaSize(self, cp):
+        arena_size = {}
+        x = cp.getfloat('Arena', 'x')
+        y = cp.getfloat('Arena', 'y')
+        if x == 0.25 and y == 0.25:
+            arena_size['name'] = 'small'
+        elif x == 0.5 and y == 0.5:
+            arena_size['name'] = 'big'
+        else:
+            arena_size['name'] = 'unknown'
+        arena_size['x'] = x
+        arena_size['y'] = y
         return arena_size
 
     def hasAltPop(self, experiment, condition):

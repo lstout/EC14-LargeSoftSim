@@ -73,7 +73,8 @@ class DataCollector2:
             print "I will only parse the following experiments :\n", \
                 [exp[0] for exp in experiments]
         else:
-            os.remove(self.outputFile)
+            if os.path.exists(self.outputFile):
+		os.remove(self.outputFile)
         self.printHeaders() 
         
 

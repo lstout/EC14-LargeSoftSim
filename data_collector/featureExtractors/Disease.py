@@ -21,8 +21,9 @@ class Disease(FeatureExtractorAbstract):
             cell_fn_name = args['config'].get("Disease", "cell_function")
             indiv_fn_name = args['config'].get("Disease", "indiv_function")        
         except Exception as e:
-            print type(e), e
-            return ['NA'] * 3
+            cell_fn_name = 'default_prob_per_fat'
+            indiv_fn_name = 'mutate_all' 
+        
         try:
             cell_fn = getattr(disease, cell_fn_name)
             prob = cell_fn(dnaMatrix)

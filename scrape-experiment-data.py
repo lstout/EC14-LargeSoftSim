@@ -81,6 +81,8 @@ class DataCollector2:
         row_count = 0 
         for exp in experiments:
             exp_type = self.getType(exp)
+            if not exp_type:
+                continue
             individuals = self.getIndividuals(exp)
             print "parsing experiment {exp} (type: {exp_type}) with {indivs} individuals".format(
                 exp=exp[0],
@@ -141,8 +143,8 @@ class DataCollector2:
             else:
                 self.errorHasBothPopFiles(experiment)
         # if neither is the case, then there are no population files for this experiment... abort
-        self.errorHasNoPop(experiment)
-    
+   	return None
+ 
     def getConfig(self, args):
         with open(args['exp'][1] + "/config/config.ini") as fh:
             cp = ConfigParser.RawConfigParser()

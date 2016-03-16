@@ -7,6 +7,7 @@ from data_collector.featureExtractors import *
 from data_collector.helpers.pathConfig import PathConfig
 import ConfigParser
 from data_collector.helpers.utilities import get_voxels, get_traces
+import multiprocessing
 
 __author__ = 'meta'
 
@@ -19,8 +20,28 @@ This script can be run standalone with 2 optional command line parameters:
 [continue] - (string, default: false) if this is "continue" or "true", then the data collection will not repeat completed experiments
 """
 
+def _pickle_method(method):
+    func_name = method.im_func.__name__
+    obj = method.im_self
+    cls = method.im_class
+    return _unpickle_method, (func_name, obj, cls)
 
-class DataCollector2:
+def _unpickle_method(func_name, obj, cls):
+    for cls in cls.mro():
+        try:
+            func = cls.__dict__[func_name]
+        except KeyError:
+            pass
+        else:
+            break
+    return func.__get__(obj, cls)
+
+import copy_reg
+import types
+copy_reg.pickle(types.MethodType, _pickle_method, _unpickle_method)
+
+
+class DataCollector2(object):
     def __init__(self, pattern, outputFile, limit, cont):
         self.pattern = pattern
         self.outputFile = outputFile
@@ -63,61 +84,44 @@ class DataCollector2:
                 for expFolder in expFolders if os.path.isdir(expFolder)]
         return output
 
+    def processExp(self, exp):
+        exp_type = self.getType(exp)
+        if not exp_type:
+            return [] 
+        individuals = self.getIndividuals(exp)
+        print "parsing experiment {exp} (type: {exp_type}) with {indivs} individuals".format(
+            exp=exp[0],
+            exp_type=exp_type,
+            indivs=len(individuals)
+        )
+        features = [] 
+        args = {}
+        args['exp_type'] = exp_type
+        args['exp'] = exp
+        args['config'] = self.getConfig(args)
+        args['arena_size'] = self.getArenaSize(args['config'])        
+        for count, indiv in enumerate(individuals[:self.limit]):
+            args['indiv'] = indiv
+            args['voxelBefore'], args['voxelAfter'] = get_voxels(args)
+            args['tracesBefore'], args['tracesAfter'] = get_traces(args)
+            features.append( self.getFeatures(args) )
+            self.printExperimentProgress(min(len(individuals), self.limit), count)
+        return features
+
+
     def collectData(self):
         experiments = self.getExperiments()
-        experimentsDone = self.loadProgress()
-
+        
         print "I found the following experiments: \n", [exp[0] for exp in experiments]
-        if self.cont:
-            experiments = self.filterExperiments(experiments, experimentsDone)
-            print "I will only parse the following experiments :\n", \
-                [exp[0] for exp in experiments]
-        else:
-            if os.path.exists(self.outputFile):
-		os.remove(self.outputFile)
+        if os.path.exists(self.outputFile):
+	    os.remove(self.outputFile)
         self.printHeaders() 
         
+        pool = multiprocessing.Pool(10)
+        features = [ feature for exp in pool.map(self.processExp, experiments) for feature in exp ]
+        self.writeFeatures(features)
 
-        row_count = 0 
-        for exp in experiments:
-            exp_type = self.getType(exp)
-            if not exp_type:
-                continue
-            individuals = self.getIndividuals(exp)
-            print "parsing experiment {exp} (type: {exp_type}) with {indivs} individuals".format(
-                exp=exp[0],
-                exp_type=exp_type,
-                indivs=len(individuals)
-            )
-            features = [] 
-            args = {}
-            args['exp_type'] = exp_type
-            args['exp'] = exp
-            args['config'] = self.getConfig(args)
-            args['arena_size'] = self.getArenaSize(args['config'])        
-            for count, indiv in enumerate(individuals[:self.limit]):
-                args['indiv'] = indiv
-                args['voxelBefore'], args['voxelAfter'] = get_voxels(args)
-                args['tracesBefore'], args['tracesAfter'] = get_traces(args)
-                features.append( self.getFeatures(args) )
-                self.printExperimentProgress(min(len(individuals), self.limit), count)
-            self.writeFeatures(features)
-            experimentsDone = self.saveProgress(exp, experimentsDone)
-            row_count += len(individuals[:self.limit])
-
-        print "wrote {} lines to {}".format(row_count, self.outputFile)
-
-    def saveProgress(self, experiment, experimentsDone):
-        experimentsDone.append(experiment)
-        pickle.dump(experimentsDone, open(self.pickleLocation, "wb"))
-        return experimentsDone
-
-    def loadProgress(self):
-        try:
-            return pickle.load(open(self.pickleLocation, "r+"))
-        except (EOFError, IOError) as e:
-            print type(e), e
-            return []
+        print "wrote {} lines to {}".format(len(features), self.outputFile)
 
     def filterExperiments(self, experiments, experimentsDone):
         out = [experiment for experiment in experiments if experiment not in experimentsDone]

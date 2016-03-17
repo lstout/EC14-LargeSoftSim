@@ -85,19 +85,19 @@ class DataCollector2(object):
         return output
 
     def processExp(self, exp):
-        exp_type = self.getType(exp)
-        if not exp_type:
-            return [] 
+        args = {}
+        args['exp'] = exp        
+        args['config'] = self.getConfig(args)
+        if not args['config']:
+            return []
+        args['exp_type'] = self.getType(args)
         individuals = self.getIndividuals(exp)
         print "parsing experiment {exp} (type: {exp_type}) with {indivs} individuals".format(
             exp=exp[0],
-            exp_type=exp_type,
+            exp_type=args['exp_type'],
             indivs=len(individuals)
         )
         features = [] 
-        args = {}
-        args['exp_type'] = exp_type
-        args['exp'] = exp
         args['config'] = self.getConfig(args)
         args['arena_size'] = self.getArenaSize(args['config'])        
         for count, indiv in enumerate(individuals[:self.limit]):
@@ -133,7 +133,16 @@ class DataCollector2(object):
         output.sort(key=lambda x: int(x[0]))
         return output
 
-    def getType(self, experiment):
+    def getType(self, args):
+        try:
+            if args['config'].getboolean('Disease','disease'):
+                return 'with disease'
+            else:
+                return 'no disease'
+        except ConfigParser.NoSectionError as e:
+            return self.getOldType(args['exp']) 
+
+    def getOldType(self, experiment):
         # if the alternative population DOES have a disease then the main experiment DIDN'T have a disease
         if self.hasAltPop(experiment, "with disease"):
             if not self.hasAltPop(experiment, "no disease"):
@@ -148,6 +157,7 @@ class DataCollector2(object):
                 self.errorHasBothPopFiles(experiment)
         # if neither is the case, then there are no population files for this experiment... abort
    	return None
+
  
     def getConfig(self, args):
         with open(args['exp'][1] + "/config/config.ini") as fh:

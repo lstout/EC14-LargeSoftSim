@@ -30,7 +30,7 @@ def mean_tissue_complexity(vd):
     if not vd.isValid:
             return 'NA'
     dnaMatrix = vd.getDNAmatrix().astype(int)
-    stepSize = 2
+    stepSize = 5
     comps = []
     for x,y,z in it.product(range(0,10,stepSize), range(0,10,stepSize), 
             range(0,10,stepSize)):
@@ -47,7 +47,7 @@ def mean_tissue_complexity(vd):
 
 class TissueComplexity(FeatureExtractorAbstract):
     def getCSVheader(self):
-        return ['TissueComplexityBefore', 'TissueComplexityAfter', 'MeanTissueComplexityBefore', 'MeanTissueComplexityBefore']
+        return ['TissueComplexityBefore', 'TissueComplexityAfter', 'MeanTissueComplexityBefore', 'MeanTissueComplexityAfter']
 
     def extract(self, args):
         return [calc_tissue_complexity(args['voxelBefore']), calc_tissue_complexity(args['voxelAfter']), mean_tissue_complexity(args['voxelBefore']), mean_tissue_complexity(args['voxelAfter'])]

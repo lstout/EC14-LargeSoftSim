@@ -106,7 +106,7 @@ class PostprocessingWorker(threading.Thread):
 
         obs_path = os.path.normpath(self.base_path + self.traces_path)
 
-        while not self.stopRequest.isSet(): # and waitCounter < self.max_waiting_time):
+        while not self.stopRequest.isSet() and waitCounter < self.max_waiting_time:
             self.dirCheck(obs_path)
 
             if (len(self.queue) > 0):
@@ -139,6 +139,7 @@ class PostprocessingWorker(threading.Thread):
                 self.stopRequest.wait(self.pause_time)
 
         print ("PP: got exit signal... cleaning up")
+        self.join()
 
     def join(self, timeout=None):
         """ function to terminate the thread (softly)

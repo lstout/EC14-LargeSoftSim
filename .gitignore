@@ -63,3 +63,6 @@ target/
 .idea
 *.csv
 *.pickle
+
+# Ignore config files
+*.ini

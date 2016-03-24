@@ -108,6 +108,7 @@ class HNWorker(threading.Thread):
                 self.stopRequest.wait(self.pause_time)
 
         print ("Thread: got exit signal... here I can do some last cleanup stuff before quitting")
+        self.join()
 
     def join(self, timeout=None):
         """ function to terminate the thread (softly)

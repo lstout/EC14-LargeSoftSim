@@ -172,6 +172,8 @@ class EC14controller():
             if unfinished == 0:
                 print("nothing left to do, quiting")
                 self.clean_exit()
+            if not self.hnWorker.isAlive() and not self.voxWorker.isAlive() and not self.ppWorker.isAlive():
+                self.clean_exit()
             time.sleep(self.pause_time)
 
     def keyboard_exit(self, signal, frame):

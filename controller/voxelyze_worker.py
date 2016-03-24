@@ -90,6 +90,7 @@ class VoxWorker(threading.Thread):
                 time.sleep(self.pause_time)
         # TODO: final steps after kill signal
         print ("Thread: got exit signal")
+        self.join()
 
     def join(self, timeout=None):
         """ function to terminate the thread (softly)

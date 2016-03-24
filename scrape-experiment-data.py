@@ -116,7 +116,6 @@ class DataCollector2(object):
         if os.path.exists(self.outputFile):
 	    os.remove(self.outputFile)
         self.printHeaders() 
-        
         pool = multiprocessing.Pool(multiprocessing.cpu_count() - 1)
         features = [ feature for exp in pool.map(self.processExp, experiments) for feature in exp ]
         self.writeFeatures(features)
@@ -160,10 +159,13 @@ class DataCollector2(object):
 
  
     def getConfig(self, args):
-        with open(args['exp'][1] + "/config/config.ini") as fh:
-            cp = ConfigParser.RawConfigParser()
-            cp.readfp(fh)
-        return cp
+        try:
+            with open(args['exp'][1] + "/config/config.ini") as fh:
+                cp = ConfigParser.RawConfigParser()
+                cp.readfp(fh)
+            return cp
+        except:
+            return None
 
 
     def getArenaSize(self, cp):

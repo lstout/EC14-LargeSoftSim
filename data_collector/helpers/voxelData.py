@@ -18,7 +18,7 @@ class VoxelData:
             tree = ET.ElementTree(file=filename)
             self.root = tree.getroot()
             self.isValid = True
-        except ET.ParseError:
+        except (ET.ParseError, IOError) as e:
             self.isValid = False
 
     def getLifeTime(self):
@@ -51,12 +51,13 @@ class VoxelData:
 
     def getAbsCounts(self):
         dna = self.getDNA()
-        if not dna:
-            return None
         out = {}
         for typeName, typeNumbers in self.types.iteritems():
             out[typeName] = 0
             for tn in typeNumbers:
+                if not dna:
+                    out[typeName] = None
+                    continue
                 out[typeName] += dna.count(str(tn))
         return out
 

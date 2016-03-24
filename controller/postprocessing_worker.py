@@ -221,82 +221,53 @@ class PostprocessingWorker(threading.Thread):
                         fertile = 0
                 traceLine = fileAsList[i].split()
                 traces.append([id, traceLine[1], traceLine[2], traceLine[3], traceLine[4], fertile])
-        if len(traces) == 0:
-            print("PP-WARNING: individual {indiv} has 0 traces, so skipping... please check this though!".format(
-                len=len(traces), indiv=id))
-        else:
-            if (self.debug):
-                print("PP: adding {len} traces for individual {indiv} to DB".format(len=len(traces), indiv=id))
-            self.db.addTraces(id, traces)
-
-    def getPotentialBirthplace(self, parent1, parent2):
-        x = (parent1["x"] + parent2["x"]) / 2
-        y = (parent1["y"] + parent2["y"]) / 2
-        return [x, y]
-
-    def filterGlobalInfertility(self, id, mates):
-        pass
-
-    def filterIncestControl(self, id, mates):
-        pass
-
-    def filterAreaBirthControl(self, id, mates):
-        pass
+        if (self.debug):
+            print("PP: adding {len} traces for individual {indiv} to DB".format(len=len(traces), indiv=id))
+        self.db.addTraces(id, traces)
 
     def filterPopulationCap(self, id, mates):
         if len(mates) > 0:
-            mate = random.choice(mates)
+             return [random.choice(mates)]
         else:
-            if not self.pick_from_pool: # then we mate the individual with itself
-                lastTrace = self.db.getLastTrace(id)
-                mate = {}
-                mate["id"] = 0
-                mate["indiv_id"] = id
-                mate["ltime"] = lastTrace["ltime"]
-                mate["x"] = lastTrace["x"]
-                mate["y"] = lastTrace["y"]
-                mate["z"] = lastTrace["z"]
-                mate["mate_id"] = 0
-                mate["mate_indiv_id"] = id
-                mate["mate_ltime"] = lastTrace["ltime"]
-                mate["mate_x"] = lastTrace["x"]
-                mate["mate_y"] = lastTrace["y"]
-                mate["mate_z"] = lastTrace["z"]
-            else:
-                return [None]
-        return [mate]
+            return []
+
+    def matesToBabies(self, id, mates):
+        babies = []
+        for line in mates:
+            parent1 = {}
+            parent1["id"] = line["id"]
+            parent1["indiv_id"] = line["indiv_id"]
+            parent1["ltime"] = line["ltime"]
+            parent1["x"] = line["x"]
+            parent1["y"] = line["y"]
+            parent1["z"] = line["z"]
+
+            parent2 = {}
+            parent2["id"] = line["mate_id"]
+            parent2["indiv_id"] = line["mate_indiv_id"]
+            parent2["ltime"] = line["mate_ltime"]
+            parent2["x"] = line["mate_x"]
+            parent2["y"] = line["mate_y"]
+            parent2["z"] = line["mate_z"]
+            babies.append([parent1, parent2, line["ltime"]])
+        return babies
 
     def calculateOffspring(self, todo):
-        """ yeah, well... generate offspring, calculate where the new individuals met friends on the way
-        :param todos: list of strings with the individual IDs
+        """ Generate offspring, calculate where the individual met others               :param todo: Strings with the individual IDs
         :return: list of babies to make
         """
 
-        babies = []
-
         if (not os.path.exists(todo)) or os.path.getsize(todo) == 0:
-            return babies 
+            return [] 
         id = self.getIDfromTrace(todo)
-        if self.debug:
-            print("PP: looking for mates for individual {indiv}...".format(indiv=id))
         mates = self.db.getMates(id)
 
-        # population cap is exclusive - if it is on, no other control works
         if self.population_cap:
             mates = self.filterPopulationCap(id, mates)
-        else:
-            if self.indiv_infertile:
-                mates = self.filterGlobalInfertility(id, mates)
-            if self.one_child:
-                mates = self.filterIncestControl(id, mates)
-            if self.area_birthcontrol:
-                mates = self.filterAreaBirthControl(id, mates)
-        if mates != [None]: # this happens only if self.pick_from_pool is True and if no mate was found
-            babies += self.matesToBabies(id, mates)
-        else:
+        if not mates:
             randomMate = self.db.getRandomMate(id)
-            babies += self.matesToBabies(randomMate["id"], [randomMate])
-        return babies
+            mates.append(randomMate)
+        return self.matesToBabies(mates)
 
     def close_in_time(self, t1, t2):
         return abs(t1['ltime']-t2['ltime']) <= self.timeTolerance
@@ -319,20 +290,7 @@ class PostprocessingWorker(threading.Thread):
                     mates.append((t,p))
         print 'PP: found', len(mates), 'possible mates for individual', id
         self.db.insertMates(mates)
-
-    def matesToBabies(self, id, mates):
-        babies = []
-        for mate in mates:
-            parent2 = {}
-            parent2["id"] = mate["mate_id"]
-            parent2["indiv_id"] = mate["mate_indiv_id"]
-            parent2["ltime"] = mate["mate_ltime"]
-            parent2["x"] = mate["mate_x"]
-            parent2["y"] = mate["mate_y"]
-            parent2["z"] = mate["mate_z"]
-            babies.append([mate, parent2, mate["ltime"]])
-        return babies
-
+    
     def makeBabies(self, babies):
         for baby in babies:
             self.db.makeBaby(baby[0], baby[1], baby[2], self.one_child,

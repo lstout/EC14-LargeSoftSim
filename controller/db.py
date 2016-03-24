@@ -72,16 +72,12 @@ class DB():
         results = self.cur.fetchall()
         return self.onlyGetIDs(results)
 
-    def getVoxTodos(self, resubmit=False):
+    def getVoxTodos(self):
         """ retrieve individuals that need to be voxelyzed
         :return: list with strings (individual names)
         """
         searchString = "SELECT * FROM " + self.tablePrefix + "_individuals AS i " + \
-                       "WHERE i.hyperneated = 1"
-        if (resubmit):
-            searchString += " AND i.vox_submitted = 1 AND i.voxelyzed = 0"
-        else:
-            searchString += " AND i.vox_submitted = 0"
+                       "WHERE i.hyperneated = 1 AND i.vox_submitted = 0"
         self.cur.execute(searchString)
         results = self.cur.fetchall()
         return self.onlyGetIDs(results)
@@ -91,14 +87,14 @@ class DB():
         :return: list of strings (parent IDs), length of this list is either 0, 1 or 2, for no parents, has been mutated from 1 parent and was created by mating,
         """
         self.cur.execute("SELECT * FROM " + self.tablePrefix + "_offspring AS o " +
-                         "WHERE o.child_id = " + str(indiv))
+                         "WHERE o.child_id = " + str(indiv) + ';')
         result = self.cur.fetchone()
-        if result == None:
+        if not result:
             return []
         else:
-            out = [str(result['parent1_id'])]
+            out = [result['parent1_id']]
             if (result['parent2_id'] != None):
-                out.append(str(result['parent2_id']))
+                out.append(result['parent2_id'])
             return out
 
 
@@ -126,23 +122,6 @@ class DB():
         """
         self.cur.execute(
             "UPDATE " + self.tablePrefix + "_individuals SET vox_submitted = 1 WHERE id = " + str(indiv) + ";")
-        self.flush()
-
-    def unmarkAsVoxSubmitted(self):
-        """ re-enable all individuals for resubmission to the cluster by removing the submitted flag
-        :return: None
-        """
-        self.cur.execute(
-            "UPDATE " + self.tablePrefix + "_individuals SET vox_submitted = 0 WHERE postprocessed = 0;")
-        self.flush()
-
-    def markAsTraced(self, indiv):
-        """ marks the individual as having the trace file inserted in the database
-        :param indiv: string, ID of an individual
-        :return: None
-        """
-        self.cur.execute(
-            "UPDATE " + self.tablePrefix + "_individuals SET traced = 1 WHERE id = " + str(indiv) + ";")
         self.flush()
 
     def markAsPostprocessed(self, indiv):
@@ -298,15 +277,9 @@ class DB():
         self.cur.execute("SELECT * FROM " + self.tablePrefix + "_traces AS t WHERE t.indiv_id = '" + str(id) + "' ")
         return self.cur.fetchall()
 
-
     def getFirstTrace(self, id):
         self.cur.execute("SELECT * FROM " + self.tablePrefix + "_firsttraces AS t WHERE t.indiv_id = '" + str(
             id) + "' ORDER BY t.id ASC LIMIT 1")
-        return self.cur.fetchone()
-
-    def getLastTrace(self, id):
-        self.cur.execute("SELECT * FROM " + self.tablePrefix + "_traces AS t WHERE t.indiv_id = '" + str(
-            id) + "' ORDER BY t.id DESC LIMIT 1")
         return self.cur.fetchone()
 
     def getUnfinishedIndividuals(self):
@@ -358,13 +331,6 @@ class DB():
         individual_id = self.cur.fetchone()['LAST_INSERT_ID()']
         return str(individual_id)
 
-    def makeFakeBaby(self, parent1, parent2="NULL"):
-        id = self.createIndividual(0, 1, 2)
-        self.cur.execute(
-            "INSERT INTO " + self.tablePrefix + "_offspring VALUES (NULL, " + str(parent1) + ", " + str(
-                parent2) + ", " + str(id) + ", 0);")
-        return id
-
     def makeBaby(self, parent1, parent2, ltime, single=False, infertileSpan=0.25, arena_x=5, arena_y=5, randomPlace=False):
         if randomPlace:
             x = random.uniform(0, arena_x)
@@ -393,135 +359,39 @@ class DB():
         return result
 
     def getRandomMate(self, indiv_id):
-        querySting1 = "SELECT MAX(line) AS rid FROM " + self.tablePrefix + "_mates;"
-        querySting2 = "SELECT * FROM " + self.tablePrefix + "_mates WHERE line = {rid};"
-        self.cur.execute(querySting1)
+        lifetime = self.getLifetime(indiv_id)
+        query = "SELECT * AS rid FROM " + self.tablePrefix + "_mates 
+        WHERE ltime > {birth} AND ltime < {death} AND fertile=1;".format(birth=lifetime['MIN(ltime)'], death=lifetime['MAX(ltime']))
+        self.cur.execute(query)
         result = self.cur.fetchall()
-        if (result[0]["rid"] == None):
-            return self.mateRandomly(indiv_id)
-        rid = int(result[0]["rid"])
-        rid = random.randint(max(1, rid-self.n_random_indivs), rid)
-        print "DB: random mate: "+str(rid)
-        self.cur.execute(querySting2.format(rid=rid))
-        result = self.cur.fetchall()
-        result = result[0]
-        return result
-
-    def getRandomIndiv(self, not_indiv_id):
-        querySting1 = "SELECT MAX(id) AS max_indiv_id FROM " + self.tablePrefix + "_individuals;"
-        querySting2 = "SELECT * FROM " + self.tablePrefix + "_individuals WHERE id = {indiv_id};"
-        indiv_id = not_indiv_id
-        self.cur.execute(querySting1)
-        result = self.cur.fetchall()
-        max_indiv_id = int(result[0]["max_indiv_id"])
-
-        while not_indiv_id == indiv_id:
-            if indiv_id == 1: #only the first individual has been created
-                break
-            indiv_id = random.randint(max(1, max_indiv_id-self.n_random_indivs), max_indiv_id)
-
-        self.cur.execute(querySting2.format(indiv_id=indiv_id))
-        result = self.cur.fetchall()
-        result = result[0]
-        return result
-
-    def mateRandomly(self, indiv_id):
-        lastTrace = self.getLastTrace(indiv_id)
-        random_indiv_a = self.getRandomIndiv(indiv_id)
-        random_indiv_b = self.getRandomIndiv(indiv_id)
-        pseudo_mate = {"line": 0,
+        if result:
+            return random.choice(result)
+        else:
+            r1_id = self.getRandomIndiv()
+            r1_id = self.getRandomIndiv()
+            ltime = random.uniform(lifetime['MIN(ltime)',lifetime['MAX(ltime'])
+            new_mate_event = {"line": 0,
                        "id": 0,
-                       "indiv_id": random_indiv_a["id"],
-                       "ltime": lastTrace["ltime"],
+                       "indiv_id": r1["id"],
+                       "ltime": ltime,
                        "x": 0,
                        "y": 0,
                        "z": 0,
                        "mate_id": 0,
-                       "mate_indiv_id": random_indiv_b["id"],
-                       "mate_ltime": lastTrace["ltime"],
+                       "mate_indiv_id": r2["id"],
+                       "mate_ltime": ltime,
                        "mate_x": 0,
                        "mate_y": 0,
                        "mate_z": 0,
-                       "fertile": 1}
+                       "fertile": 1} 
+            return new_mate_event
 
-        return pseudo_mate
-
-    def findMate(self, id, timeTolerance=0.0, spaceTolerance=0.01, startTrace=0, single=False):
-        # self.currentQueries += 1
-        # if self.currentQueries > self.maxQueries:
-        # print ("DB: reached max numbers of long queries, reconnecting...")
-        # self.connect()
-        # print ("DB: ...reconnect done.")
-        # self.currentQueries = 1
-
-        query = "SELECT t1.*, t2.indiv_id as mate_indiv_id, t2.id as mate_id, t2.ltime as mate_ltime, t2.x as mate_x, t2.y as mate_y, t2.z as mate_z " + \
-                "FROM " + self.tablePrefix + "_traces AS t1 INNER JOIN " + self.tablePrefix + "_traces as t2 " + \
-                "WHERE t1.indiv_id={indiv_id} and t2.indiv_id!={indiv_id} "
-        #if not single:
-        query += "AND t1.fertile = 1 AND t2.fertile = 1 "
-
-        query += "AND t1.id > {start} "
-
-        if timeTolerance > 0:
-            query += "AND t1.ltime >= t2.ltime-{timeTol} AND t1.ltime <= t2.ltime+{timeTol} "
-        else:
-            query += "AND t1.ltime = t2.ltime "
-
-        query += "AND SQRT( POW(t1.x - t2.x,2) + POW(t1.y - t2.y,2) ) <= {spaceTol} "
-
-        if not single:
-            query += "LIMIT 1"
-        else:
-            query += "GROUP BY mate_indiv_id"
-
-        print ("DB: query:")
-        print (query.format(indiv_id=id, timeTol=timeTolerance, spaceTol=spaceTolerance, start=startTrace))
-        self.cur.execute(query.format(indiv_id=id, timeTol=timeTolerance, spaceTol=spaceTolerance, start=startTrace))
-        return self.cur.fetchall()
-
-    def haveMatedBefore(self, parent1, parent2):
-        self.flush()
-        query = "SELECT id FROM " + self.tablePrefix + "_offspring " + \
-                "WHERE (parent1_id = {parent1} AND parent2_id = {parent2}) " + \
-                "OR (parent1_id = {parent2} AND parent2_id = {parent1})"
-        query_filled = query.format(parent1=parent1["indiv_id"], parent2=parent2["indiv_id"])
-        self.cur.execute(query_filled)
-        res = self.cur.fetchall()
-        if len(res) > 0:
-            return True
-        else:
-            return False
-
-    def isParentOf(self, child, parent):
-        self.flush()
-        query = "SELECT id FROM " + self.tablePrefix + "_offspring " + \
-                "WHERE child_id = {child} AND " + \
-                "(parent1_id = {parent} OR parent2_id = {parent})"
-        query_filled = query.format(parent=parent, child=child)
-        self.cur.execute(query_filled)
-        res = self.cur.fetchall()
-        if len(res) > 0:
-            return True
-        else:
-            return False
-
-    def getOtherBotsInArea(self, ltime, x, y, radius):
-        self.flush()
-        # TODO: this ltime+0...1 -0...1 is dirty, I KNOW, any better solutions are welcome
-        query = "SELECT COUNT(id) FROM " + self.tablePrefix + "_{TABLE} " + \
-                "WHERE ltime >= {ltime}-0.0001 AND ltime <= {ltime}+0.0001 AND " + \
-                "SQRT( POW(x - {x},2) + POW(y - {y},2) ) <= {radius}"
-        query_filled = query.format(ltime=ltime, x=x, y=y, radius=radius, table="traces")
-        self.cur.execute(query_filled)
+    def getRandomIndiv(self):
+        query = "SELECT id FROM " + self.tablePrefix + "_individuals;"
+        query2 = "SELECT * FROM " + self.tablePrefix + "_individuals WHERE id = {indiv_id};"
+        self.cur.execute(query1)
         result = self.cur.fetchall()
-        voxed = result[0]['COUNT(id)']
-
-        query_filled = query.format(ltime=ltime, x=x, y=y, radius=radius, table="firsttraces")
-        self.cur.execute(query_filled)
-        result = self.cur.fetchall()
-        unvoxed = result[0]['COUNT(id)']
-
-        return voxed + unvoxed
+        return random.choice(result)['id']
 
     def getTerritory(self, id):
         query = "SELECT MIN(x), MAX(x), MIN(y), MAX(y) " + \

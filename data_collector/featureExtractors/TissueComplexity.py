@@ -30,7 +30,7 @@ def mean_tissue_complexity(vd):
     if not vd.isValid:
             return 'NA'
     dnaMatrix = vd.getDNAmatrix().astype(int)
-    stepSize = 5
+    stepSize = 2
     comps = []
     for x,y,z in it.product(range(0,10,stepSize), range(0,10,stepSize), 
             range(0,10,stepSize)):

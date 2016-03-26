@@ -25,11 +25,14 @@ class Preprocessor():
         return coordinates
 
     def addStartingPointArenaAndTime(self, filename, vox_preamble=8, arenaX=5, arenaY=5, arenaType="i", birthX=0, birthY=0, birthTime=0, timestep=0.002865):
+        out = []
         with open(filename, 'r') as inputFile:
             for i, line in enumerate(inputFile):
                 if i < 8:
                     continue
                 coordinates = line.split()
+                if coordinates[0] == 'Ended':
+                    break
                 coordinates = map(float, coordinates)
                 coordinates = self.correctBirth(coordinates, birthX, birthY, birthTime, timestep)
                 coordinates = self.correctArena(coordinates, arenaX, arenaY)

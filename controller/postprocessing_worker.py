@@ -110,7 +110,6 @@ class PostprocessingWorker(threading.Thread):
             self.dirCheck(obs_path)
 
             if (len(self.queue) > 0):
-                print 'PP:',map(self.getIDfromTrace,self.queue)
                 item = self.queue.pop()
                 if self.debug:
                     print "PP: working on id", item
@@ -123,6 +122,7 @@ class PostprocessingWorker(threading.Thread):
                 self.makeBabies(babies)
                 self.moveFilesToFinal(item)
                 self.markAsPostprocessed(item)
+                self.db.cleanTraces()
                 waitCounter = 0
             else:
                 if (self.debug):
@@ -199,7 +199,6 @@ class PostprocessingWorker(threading.Thread):
                                              first_trace["x"],
                                              first_trace["y"],
                                              indiv["born"],
-                                             self.end_time,
                                              self.timestep)
 
     def traceToDatabase(self, todo):
@@ -221,8 +220,6 @@ class PostprocessingWorker(threading.Thread):
                         fertile = 0
                 traceLine = fileAsList[i].split()
                 traces.append([id, traceLine[1], traceLine[2], traceLine[3], traceLine[4], fertile])
-        if (self.debug):
-            print("PP: adding {len} traces for individual {indiv} to DB".format(len=len(traces), indiv=id))
         self.db.addTraces(id, traces)
 
     def filterPopulationCap(self, id, mates):
@@ -231,7 +228,7 @@ class PostprocessingWorker(threading.Thread):
         else:
             return []
 
-    def matesToBabies(self, id, mates):
+    def matesToBabies(self, mates):
         babies = []
         for line in mates:
             parent1 = {}
@@ -265,6 +262,8 @@ class PostprocessingWorker(threading.Thread):
         if self.population_cap:
             mates = self.filterPopulationCap(id, mates)
         if not mates:
+            if self.debug:
+                print 'PP: Did not find a mate, getting a random one for id:', id
             randomMate = self.db.getRandomMate(id)
             mates.append(randomMate)
         return self.matesToBabies(mates)
@@ -288,7 +287,6 @@ class PostprocessingWorker(threading.Thread):
             for p in possibleMates:
                 if self.close_in_time(t, p) and self.close_in_space(t, p):
                     mates.append((t,p))
-        print 'PP: found', len(mates), 'possible mates for individual', id
         self.db.insertMates(mates)
     
     def makeBabies(self, babies):

@@ -92,14 +92,10 @@ class HNWorker(threading.Thread):
                 todoTmp = []
                 for _ in range(min(self.queue_length, len(todos))):
                     todoTmp.append(todos.pop())
-                if self.debug:
-                    print("HN: found " + str(len(todoTmp)) + " todos")
                 self.execHN(todoTmp)
                 self.preprocessBeforeVox(todoTmp)
                 waitCounter = 0
             else:
-                if self.debug:
-                    print("HN: found no todos")
                 waitCounter += time.time() - startTime
                 startTime = time.time()
 
@@ -108,7 +104,6 @@ class HNWorker(threading.Thread):
                 self.stopRequest.wait(self.pause_time)
 
         print ("Thread: got exit signal... here I can do some last cleanup stuff before quitting")
-        self.join()
 
     def join(self, timeout=None):
         """ function to terminate the thread (softly)
@@ -124,9 +119,6 @@ class HNWorker(threading.Thread):
         """ check the DB or the filesystem and look if there are any new individuals that need to be hyperneated
         :return: simple python list with the names of the individuals that are new and need to be hyperneated
         """
-        if self.debug:
-            print("HN: checking for todos")
-
         todos = self.db.getHNtodos()
         print "HN: Found", len(todos), "todo(s)"
         return todos
@@ -136,13 +128,9 @@ class HNWorker(threading.Thread):
         :param todos: list with strings containing the names of the individuals to be hyperneated
         :return: None
         """
-        if self.debug:
-            print("HN: executing hyperneat for the following individuals:")
-            print(todos)
-
         for indiv in todos:
             parents = self.db.getParents(indiv)
-            hn_params = " ".join(parents)  # parent will be a list of size 0|1|2
+            hn_params = " ".join(map(str,parents))  # parent will be a list of size 0|1|2
             print("HN: creating individual (calling HN binary): " + str(indiv) )
             self.runHN(indiv, hn_params)
             print("HN: finished creating individual: " + str(indiv))
@@ -174,7 +162,6 @@ class HNWorker(threading.Thread):
             shutil.move(indiv_hn, indiv_pop)
 
             if self.disease:
-                print 'HN: DISEAAAAASE', self.indiv_prob_fn, self.cell_prob_fn
                 disease_functions.apply_disease(indiv_pop, self.indiv_prob_fn, self.cell_prob_fn)
 
             self.calculateLifetime(indiv)

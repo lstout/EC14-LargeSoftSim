@@ -144,6 +144,17 @@ class DB():
         self.cur.execute("UPDATE " + self.tablePrefix + "_individuals SET total_time = " + str(
             self.getTotalSeconds(diff_time)) + " WHERE id = " + str(indiv) + ";")
         self.flush()
+    
+    def cleanTraces(self):
+        """ remove unnecessary traces from table to speed up process """
+        query = """DELETE traces 
+                   FROM """+self.tablePrefix+"""_traces as traces, 
+	                (SELECT min(born) as earliest_born_not_processed
+		            FROM """+self.tablePrefix+"""_individuals
+		            WHERE postprocessed=0) as temp
+                   WHERE ltime < earliest_born_not_processed;"""
+        self.cur.execute(query)
+        self.flush()
 
     def getTotalSeconds(self, timedelta):
         # hack because the total_seconds method only came in python 2.7 and DAS-4 runs 2.6
@@ -253,8 +264,6 @@ class DB():
                 born) + "', '" + str(x) + "', '" + str(
                 y) + "', 0, 1);")
         self.flush()
-        print ("created individual: " + individual_id)
-
         return individual_id
 
     def addTraces(self, id, traces):
@@ -360,36 +369,27 @@ class DB():
 
     def getRandomMate(self, indiv_id):
         lifetime = self.getLifetime(indiv_id)
-        query = "SELECT * AS rid FROM " + self.tablePrefix + "_mates 
-        WHERE ltime > {birth} AND ltime < {death} AND fertile=1;".format(birth=lifetime['MIN(ltime)'], death=lifetime['MAX(ltime']))
-        self.cur.execute(query)
-        result = self.cur.fetchall()
-        if result:
-            return random.choice(result)
-        else:
-            r1_id = self.getRandomIndiv()
-            r1_id = self.getRandomIndiv()
-            ltime = random.uniform(lifetime['MIN(ltime)',lifetime['MAX(ltime'])
-            new_mate_event = {"line": 0,
+        random_id = self.getRandomIndiv()
+        ltime = lifetime['MAX(ltime)']
+        new_mate_event = {"line": 0,
                        "id": 0,
-                       "indiv_id": r1["id"],
+                       "indiv_id": indiv_id,
                        "ltime": ltime,
                        "x": 0,
                        "y": 0,
                        "z": 0,
                        "mate_id": 0,
-                       "mate_indiv_id": r2["id"],
+                       "mate_indiv_id": random_id,
                        "mate_ltime": ltime,
                        "mate_x": 0,
                        "mate_y": 0,
                        "mate_z": 0,
                        "fertile": 1} 
-            return new_mate_event
+        return new_mate_event
 
     def getRandomIndiv(self):
         query = "SELECT id FROM " + self.tablePrefix + "_individuals;"
-        query2 = "SELECT * FROM " + self.tablePrefix + "_individuals WHERE id = {indiv_id};"
-        self.cur.execute(query1)
+        self.cur.execute(query)
         result = self.cur.fetchall()
         return random.choice(result)['id']
 

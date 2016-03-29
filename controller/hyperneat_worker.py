@@ -19,6 +19,7 @@ class HNWorker(threading.Thread):
     base_path = ""
     pop_path = "population/"
     hn_path = "~/EC14-HyperNEAT/out/"
+    hn_safe_path = "hn_output/"
     hn_binary = "./Hypercube_NEAT"
     hn_params_file = "softbotTest.dat"
     suffix_genome = "_genome.xml"
@@ -41,6 +42,7 @@ class HNWorker(threading.Thread):
         self.base_path = os.path.expanduser(self.path_prefix + self.exp_name) + "/"
 
         self.hn_path = self.config.get('Hyperneat', 'hn_path')
+        self.hn_save_path = self.config.get('Hyperneat', 'hn_save_path')
         self.hn_binary = self.config.get('Hyperneat', 'hn_binary')
         self.hn_params_file = self.config.get('Hyperneat', 'hn_params_file')
         self.suffix_genome = self.config.get('Hyperneat', 'suffix_genome')
@@ -74,6 +76,7 @@ class HNWorker(threading.Thread):
         self.hn_path = os.path.expanduser(self.hn_path)
         self.pop_path = os.path.expanduser(self.base_path + self.pop_path)
         self.pl_path = os.path.expanduser(self.base_path + self.pl_path)
+        self.hn_save_path = os.path.expanduser(self.base_path + self.hn_save_path)
 
         self.stopRequest = threading.Event()
 
@@ -149,13 +152,12 @@ class HNWorker(threading.Thread):
         if self.debug:
             print("HN: preprocessing")
         for indiv in todos:
-            indiv_hn = self.hn_path + str(indiv) + self.suffix_vox
+            indiv_hn = self.hn_save_path + str(indiv) + self.suffix_vox
             indiv_pop = self.pop_path + str(indiv) + self.suffix_vox
             indiv_pl = self.pl_path + str(indiv) + self.suffix_vox
-            if (not os.path.isfile(indiv_hn)):
-                print ("HH: individual " + str(indiv) + " born dead")
-                self.db.markAsDead(indiv)
-                continue
+            while not os.path.isfile(indiv_hn):
+                print indiv, 'not born alive, recreating!'
+                self.execHN([indiv])
             if self.debug:
                 print("HN: preprocessing individual " + str(indiv))
             shutil.copy2(indiv_hn, indiv_pl)
@@ -176,8 +178,10 @@ class HNWorker(threading.Thread):
 
         for f in self.hn_stray_files:
             if (os.path.isfile(self.hn_path + f)):
-                os.remove(self.hn_path + f)
-
+                try:
+                    os.remove(self.hn_path + f)
+                except:
+                    continue
         self.db.flush()
 
     def calculateLifetime(self,indiv):
@@ -212,7 +216,7 @@ class HNWorker(threading.Thread):
         :param hn_params: string with either 0, 1 or 2 parents, just the IDs (no file suffix), separated by a space
         :return: None
         """
-        hn_string = "-I " + self.hn_params_file + " -R $RANDOM -O " + str(indiv) + " -ORG " + hn_params
+        hn_string = "-I " + self.hn_params_file + " -R $RANDOM -O " +self.hn_save_path + str(indiv) + " -ORG " + hn_params
         try:
             subprocess.check_call(self.hn_binary + " " + hn_string,
                                   cwd=self.hn_path,

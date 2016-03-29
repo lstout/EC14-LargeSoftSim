@@ -67,8 +67,10 @@ class DB():
         """ retrieve individuals that need to be created (that only exist in the database so far)
         :return: list with strings (individual names)
         """
-        self.cur.execute("SELECT * FROM " + self.tablePrefix + "_individuals AS i " +
-                         "WHERE i.hyperneated = 0 AND born < '" + str(self.maxSimTime) + "'")
+        query = 'SELECT * FROM ' + self.tablePrefix + "_individuals AS i WHERE i.hyperneated = 0"
+        if self.maxSimTime > 0:
+            query += ' AND born < '+str(self.maxSimTime)
+        self.cur.execute(query)
         results = self.cur.fetchall()
         return self.onlyGetIDs(results)
 
@@ -358,8 +360,10 @@ class DB():
         return id
 
     def infertilize(self, parent, start, timespan):
-        updateString = "UPDATE " + self.tablePrefix + "_traces SET fertile = 0 WHERE indiv_id = {indiv} AND ltime >= {start} AND ltime < {end}"
-        self.cur.execute(updateString.format(indiv=parent, start=start, end=start + timespan))
+        query = "DELETE FROM " + self.tablePrefix + "_traces WHERE indiv_id = {indiv} AND ltime >= {start} AND ltime < {end}"
+        self.cur.execute(query.format(indiv=parent, start=start, end=start + timespan))
+        query = "DELETE FROM " + self.tablePrefix + "_mates WHERE (indiv_id = {indiv} AND ltime >= {start} AND ltime < {end}) OR (mate_indiv_id = {indiv} AND mate_ltime >= {start} AND mate_ltime < {end})")
+        self.cur.execute(query.format(indiv=parent, start=start, end=start + timespan))
 
     def getMates(self, indiv):
         querySting = "SELECT * FROM " + self.tablePrefix + "_mates WHERE indiv_id={indiv};"
@@ -369,17 +373,26 @@ class DB():
 
     def getRandomMate(self, indiv_id):
         lifetime = self.getLifetime(indiv_id)
-        random_id = self.getRandomIndiv()
+	query = 'SELECT indiv_id, mate_indiv_id FROM ' +self.tablePrefix+ '_mates'
+        self.cur.execute(query)
+        result = self.cur.fetchall()
+        if not result:
+            indiv1 = self.getRandomIndiv()
+            indiv2 = self.getRandomIndiv()
+        else:
+            event = random.choice(result)
+            indiv1 = event['indiv_id']
+            indiv2 = event['mate_indiv_id']
         ltime = lifetime['MAX(ltime)']
         new_mate_event = {"line": 0,
                        "id": 0,
-                       "indiv_id": indiv_id,
+                       "indiv_id": indiv1,
                        "ltime": ltime,
                        "x": 0,
                        "y": 0,
                        "z": 0,
                        "mate_id": 0,
-                       "mate_indiv_id": random_id,
+                       "mate_indiv_id": indiv2,
                        "mate_ltime": ltime,
                        "mate_x": 0,
                        "mate_y": 0,

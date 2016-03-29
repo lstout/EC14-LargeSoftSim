@@ -62,6 +62,7 @@ class EC14controller():
         os.makedirs(self.base_path + "population_beforePL/")
         os.makedirs(self.base_path + "pool/")
         os.makedirs(self.base_path + "logs/")
+        os.makedirs(self.base_path + "hn_output/")
 
         shutil.copy(self.configPath, self.base_path + "config/config.ini")
 
@@ -172,7 +173,7 @@ class EC14controller():
             if unfinished == 0:
                 print("nothing left to do, quiting")
                 self.clean_exit()
-            if not self.hnWorker.isAlive() and not self.voxWorker.isAlive() and not self.ppWorker.isAlive():
+            if not self.hnWorker.isAlive() or not self.voxWorker.isAlive() or not self.ppWorker.isAlive():
                 self.clean_exit()
             time.sleep(self.pause_time)
 

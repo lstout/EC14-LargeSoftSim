@@ -362,7 +362,7 @@ class DB():
     def infertilize(self, parent, start, timespan):
         query = "DELETE FROM " + self.tablePrefix + "_traces WHERE indiv_id = {indiv} AND ltime >= {start} AND ltime < {end}"
         self.cur.execute(query.format(indiv=parent, start=start, end=start + timespan))
-        query = "DELETE FROM " + self.tablePrefix + "_mates WHERE (indiv_id = {indiv} AND ltime >= {start} AND ltime < {end}) OR (mate_indiv_id = {indiv} AND mate_ltime >= {start} AND mate_ltime < {end})")
+        query = "DELETE FROM " + self.tablePrefix + "_mates WHERE (indiv_id = {indiv} AND ltime >= {start} AND ltime < {end}) OR (mate_indiv_id = {indiv} AND mate_ltime >= {start} AND mate_ltime < {end})"
         self.cur.execute(query.format(indiv=parent, start=start, end=start + timespan))
 
     def getMates(self, indiv):
@@ -373,7 +373,7 @@ class DB():
 
     def getRandomMate(self, indiv_id):
         lifetime = self.getLifetime(indiv_id)
-	query = 'SELECT indiv_id, mate_indiv_id FROM ' +self.tablePrefix+ '_mates'
+	query = 'SELECT indiv_id, mate_indiv_id FROM ' +self.tablePrefix+ '_mates GROUP BY indiv_id, mate_indiv_id'
         self.cur.execute(query)
         result = self.cur.fetchall()
         if not result:

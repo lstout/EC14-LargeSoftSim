@@ -2,6 +2,7 @@ import xml.etree.cElementTree as ET
 import random
 import sys
 import numpy as np
+import shutil
 
 def get_tree(filename):
     tree = ET.ElementTree(file=filename)
@@ -24,9 +25,10 @@ def read_dna_file(fp):
 def write_dna(dna_new, fp):
     tree = get_tree(fp)
     layers = get_layers(tree)
-    
+  
     for i, layer in enumerate(layers):
         layer.text = "".join(map(str,dna_new[i]))
+    
     try:
         tree.write(fp)
     except Exception as e:
@@ -66,8 +68,9 @@ def apply_disease(fp, indiv_func = mutate_all, cell_fun = default_prob_per_fat):
         n = 0
         for i in range(dna_new.shape[0]):
             for j in range(dna_new.shape[1]):
-                if dna[i,j] >= 3:
+                if dna_new[i,j] >= 3:
                     if rand[n] < p:
-                        dna[i,j] = 2
+                        dna_new[i,j] = 2
                     n += 1
         write_dna(dna_new, fp)
+

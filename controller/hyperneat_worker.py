@@ -167,9 +167,6 @@ class HNWorker(threading.Thread):
                 disease_functions.apply_disease(indiv_pop, self.indiv_prob_fn, self.cell_prob_fn)
 
             self.calculateLifetime(indiv)
-            
-            if (os.path.isfile(indiv_hn)):
-                shutil.copy2(indiv_hn, indiv_pop)
 
             if (os.path.isfile(self.hn_path + self.hn_trash_file.format(indiv))):
                 os.remove(self.hn_path + self.hn_trash_file.format(indiv))

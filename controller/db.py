@@ -373,10 +373,11 @@ class DB():
 
     def getRandomMate(self, indiv_id):
         lifetime = self.getLifetime(indiv_id)
-	query = 'SELECT indiv_id, mate_indiv_id FROM ' +self.tablePrefix+ '_mates GROUP BY indiv_id, mate_indiv_id'
+	query = 'SELECT indiv_id, mate_indiv_id FROM ' +self.tablePrefix+ '_mates WHERE ltime < '+str(lifetime['MIN(ltime)'])+' GROUP BY indiv_id, mate_indiv_id ORDER BY line DESC LIMIT 500'
         self.cur.execute(query)
         result = self.cur.fetchall()
         if not result:
+            query = 'SELECT id FROM ' +self.tablePrefix+ '_individuals WHERE born < '+str(lifetime['MIN(ltime)']) + ' ORDER BY id DESC LIMIT 500'
             indiv1 = self.getRandomIndiv()
             indiv2 = self.getRandomIndiv()
         else:

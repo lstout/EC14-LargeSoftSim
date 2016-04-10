@@ -73,9 +73,7 @@ class VoxWorker(threading.Thread):
             todos = self.checkForTodos()
             addedSomethingNew = self.addToQueue(todos)
             forced = False
-            if addedSomethingNew:
-                waitCounter = 0
-            else:
+            if not addedSomethingNew:
                 waitCounter += time.time() - startTime
                 startTime = time.time()
                 if len(self.queue) > 0 and waitCounter > self.queue_force_submit_time:

@@ -45,13 +45,13 @@ def sigmoid_fat(dna):
     pass
 
 def default_prob_per_fat(dna):
-    return (dna == 1).sum() * 0.005
+    return (dna == 1).sum() * 0.0005
 
 def double_prob_per_fat(dna):
-    return (dna == 1).sum() * 0.01
+    return (dna == 1).sum() * 0.001
 
-def very_high_prob_per_fat(dna):
-    return (dna == 1).sum() * 0.05
+def low_prob_per_fat(dna):
+    return (dna == 1).sum() * 0.0001
 
 
 def apply_disease(fp, indiv_func = mutate_all, cell_fun = default_prob_per_fat):

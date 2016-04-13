@@ -19,7 +19,7 @@ class HNWorker(threading.Thread):
     base_path = ""
     pop_path = "population/"
     hn_path = "~/EC14-HyperNEAT/out/"
-    hn_safe_path = "hn_output/"
+    hn_save_path = "hn_output/"
     hn_binary = "./Hypercube_NEAT"
     hn_params_file = "softbotTest.dat"
     suffix_genome = "_genome.xml"
@@ -133,6 +133,7 @@ class HNWorker(threading.Thread):
         """
         for indiv in todos:
             parents = self.db.getParents(indiv)
+            parents = [self.hn_save_path + str(p) for p in parents]
             hn_params = " ".join(map(str,parents))  # parent will be a list of size 0|1|2
             print("HN: creating individual (calling HN binary): " + str(indiv) )
             self.runHN(indiv, hn_params)
@@ -214,6 +215,7 @@ class HNWorker(threading.Thread):
         :return: None
         """
         hn_string = "-I " + self.hn_params_file + " -R $RANDOM -O " +self.hn_save_path + str(indiv) + " -ORG " + hn_params
+        print self.hn_binary, hn_string
         try:
             subprocess.check_call(self.hn_binary + " " + hn_string,
                                   cwd=self.hn_path,

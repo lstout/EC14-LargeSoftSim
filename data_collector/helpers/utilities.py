@@ -44,7 +44,6 @@ def get_config_attr(exp_name, section, name):
 
 def get_voxels(args):
     before, after = get_before_after_vox(args['exp'][1], args['exp_type'], args['indiv'][0])
-    print before, after
     v1 = VoxelData(before).getAbsCounts().values()
     v2 = VoxelData(after).getAbsCounts().values()
     return VoxelData(before), VoxelData(after)

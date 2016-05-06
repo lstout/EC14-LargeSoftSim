@@ -294,12 +294,12 @@ class DB():
         return self.cur.fetchone()
 
     def getUnfinishedIndividuals(self):
-        query = "SELECT COUNT(id) as count FROM " + self.tablePrefix + "_individuals WHERE postprocessed = 0"
+        query = "SELECT COUNT(id) FROM " + self.tablePrefix + "_individuals WHERE postprocessed = 0"
         if self.maxSimTime > 0:
-            query += " AND born < " + str(self.maxSimTime )
-        self.cur.execute(query)
+            query += " AND born < " + self.maxSimTime 
+        self.cur.execute("SELECT COUNT(id) FROM " + self.tablePrefix + "_individuals WHERE postprocessed = 0")
         result = self.cur.fetchall()
-        return result[0]['count']
+        return result[0]['COUNT(id)']
 
     def flush(self):
         self.con.commit()
@@ -376,11 +376,7 @@ class DB():
 
     def getRandomMate(self, indiv_id):
         lifetime = self.getLifetime(indiv_id)
-	if lifetime['MIN(ltime)']:
-            lifetime_string = "WHERE ltime < "+str(lifetime['MIN(ltime)']) + " "
-        else:
-            lifetime_string = " "
-        query = 'SELECT indiv_id, mate_indiv_id FROM ' +self.tablePrefix+ '_mates '+lifetime_string+' GROUP BY indiv_id, mate_indiv_id ORDER BY line DESC LIMIT 500'
+	query = 'SELECT indiv_id, mate_indiv_id FROM ' +self.tablePrefix+ '_mates WHERE ltime < '+str(lifetime['MIN(ltime)'])+' GROUP BY indiv_id, mate_indiv_id ORDER BY line DESC LIMIT 500'
         self.cur.execute(query)
         result = self.cur.fetchall()
         if not result:

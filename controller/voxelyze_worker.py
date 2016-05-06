@@ -88,9 +88,9 @@ class VoxWorker(threading.Thread):
                 time.sleep(self.pause_time)
         # TODO: final steps after kill signal
         print ("Thread: got exit signal")
-        self.join()
+        self.kill()
 
-    def join(self, timeout=None):
+    def kill(self, timeout=None):
         """ function to terminate the thread (softly)
         :param timeout: not implemented yet
         :return: None
@@ -98,7 +98,7 @@ class VoxWorker(threading.Thread):
         if self.debug:
             print("VOX: got kill request for thread")
         self.stopRequest.set()
-        super(VoxWorker, self).join(timeout)
+	super(VoxWorker, self).join()
 
     def addToQueue(self, todos):
         before = len(self.queue)
@@ -181,7 +181,8 @@ class VoxWorker(threading.Thread):
                                       stdout=subprocess.PIPE).communicate()[0]
 
             jobname = self.splitOutputIntoJobname(output)
-            self.db.addJob(jobname, cmd, sendList)
+            print output
+	    self.db.addJob(jobname, cmd, sendList)
         except subprocess.CalledProcessError as e:
             print ("Vox: during submit.sh execution there was an error:")
             print (str(e.returncode))

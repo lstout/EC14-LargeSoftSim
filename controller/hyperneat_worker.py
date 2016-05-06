@@ -108,7 +108,7 @@ class HNWorker(threading.Thread):
 
         print ("Thread: got exit signal... here I can do some last cleanup stuff before quitting")
 
-    def join(self, timeout=None):
+    def kill(self, timeout=None):
         """ function to terminate the thread (softly)
         :param timeout: not implemented yet
         :return: None
@@ -133,7 +133,6 @@ class HNWorker(threading.Thread):
         """
         for indiv in todos:
             parents = self.db.getParents(indiv)
-            parents = [self.hn_save_path + str(p) for p in parents]
             hn_params = " ".join(map(str,parents))  # parent will be a list of size 0|1|2
             print("HN: creating individual (calling HN binary): " + str(indiv) )
             self.runHN(indiv, hn_params)
@@ -214,7 +213,10 @@ class HNWorker(threading.Thread):
         :param hn_params: string with either 0, 1 or 2 parents, just the IDs (no file suffix), separated by a space
         :return: None
         """
-        hn_string = "-I " + self.hn_params_file + " -R $RANDOM -O " +self.hn_save_path + str(indiv) + " -ORG " + hn_params
+        if hn_params:
+        	hn_params = [self.hn_save_path + f for f in hn_params.split(" ")]
+		hn_params = " ".join(hn_params)
+	hn_string = "-I " + self.hn_params_file + " -R $RANDOM -O " +self.hn_save_path + str(indiv) + " -ORG " + hn_params
         print self.hn_binary, hn_string
         try:
             subprocess.check_call(self.hn_binary + " " + hn_string,

@@ -10,6 +10,11 @@ if len(sys.argv) > 2:
 else:
     run = 0
 
+if len(sys.argv) > 3:
+    delay = "-W depend=afterok:"+sys.argv[3]
+else:
+    delay = ""
+
 path_prefix = config.get("Experiment", "path_prefix")
 name = config.get("Experiment", "name")
 total = path_prefix+name
@@ -18,7 +23,7 @@ walltime = config.get("Experiment","self_wall_time")
 
 base = os.path.dirname(os.path.realpath(__file__))
 
-cmd = 'qsub -o '+total+'/logs/main.run' + str(run) + '.output.log -e '+total+'/logs/main.run'+ str(run) +'.error.log -l walltime=' + walltime + ' -v config='+os.path.abspath(sys.argv[1])+',run='+str(run)+',cwd='+base+' '+base+'/controller/scripts/main_resub.sh'
+cmd = 'qsub -o '+total+'/logs/main.run' + str(run) + '.output.log -e '+total+'/logs/main.run'+ str(run) +'.error.log -l walltime=' + walltime + ' ' + delay  + ' -v config='+os.path.abspath(sys.argv[1])+',run='+str(run)+',cwd='+base+' '+base+'/controller/scripts/main_resub.sh'
 print cmd
 output = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE).communicate()[0]
 

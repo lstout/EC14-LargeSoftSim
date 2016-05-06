@@ -182,9 +182,9 @@ class EC14controller():
         self.clean_exit()
 
     def clean_exit(self):
-        self.hnWorker.join()
-        self.voxWorker.join()
-        self.ppWorker.join()
+        self.hnWorker.kill()
+        self.voxWorker.kill()
+        self.ppWorker.kill()
         sys.exit(0)
 
 ctrl = EC14controller()

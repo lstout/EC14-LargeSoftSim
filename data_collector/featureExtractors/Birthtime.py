@@ -15,6 +15,9 @@ class Birthtime(FeatureExtractorAbstract):
         else:
             traces = args['tracesAfter']
         if len(traces):
-            return [traces[0,0]]
+            try:
+                return [traces[0,0]]
+            except IndexError:
+                return ['NA']
         else:
             return ['NA']

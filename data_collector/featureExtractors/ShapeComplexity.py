@@ -44,26 +44,16 @@ class ShapeComplexity(FeatureExtractorAbstract):
         new_points = set()         
         dnaMatrix = dnaMatrix.astype(bool)
         for x,y,z in points:
-            add = False
-            for x_d, y_d, z_d in [[1,0,0],[-1,0,0],[0,1,0],[0,-1,0],[0,0,1],[0,0,-1]]:
-                try:
-                    if not dnaMatrix[x+x_d, y+y_d, z+z_d]:
-                        add = True
-                        break
-                except IndexError:
-                    add = True
-                    break
-            if add:
-                new_points.add((x+0.5, y+0.5, z+0.5))
-                new_points.add((x+0.5, y+0.5, z-0.5))
-                new_points.add((x+0.5, y-0.5, z+0.5))
-                new_points.add((x+0.5, y-0.5, z-0.5))
-                new_points.add((x-0.5, y+0.5, z+0.5))
-                new_points.add((x-0.5, y+0.5, z-0.5))
-                new_points.add((x-0.5, y-0.5, z+0.5))
-                new_points.add((x-0.5, y-0.5, z-0.5))
+            new_points.add((x+0.5, y+0.5, z+0.5))
+            new_points.add((x+0.5, y+0.5, z-0.5))
+            new_points.add((x+0.5, y-0.5, z+0.5))
+            new_points.add((x+0.5, y-0.5, z-0.5))
+            new_points.add((x-0.5, y+0.5, z+0.5))
+            new_points.add((x-0.5, y+0.5, z-0.5))
+            new_points.add((x-0.5, y-0.5, z+0.5))
+            new_points.add((x-0.5, y-0.5, z-0.5))
         
-        new_points = np.array(list(new_points))
+        new_points = np.array(new_points)
         return new_points
 
     def calc_complexity(self, dnaMatrix):
@@ -73,7 +63,15 @@ class ShapeComplexity(FeatureExtractorAbstract):
         volume = self.volume_hull(hull)
         ratio = 1-(len(points)/volume)
         triangles = len(hull.simplices)
-        
+        print ratio, volume, len(points)
+        for simplex in hull.simplices:
+            for i in simplex:
+                for p in list(hull.points[i]):
+		    print p,
+                print '\t',
+            print
+        if ratio < 0:
+            raise ValueError
         return ratio, triangles
 
 

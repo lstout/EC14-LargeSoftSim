@@ -139,9 +139,9 @@ class PostprocessingWorker(threading.Thread):
                 self.stopRequest.wait(self.pause_time)
 
         print ("PP: got exit signal... cleaning up")
-        self.join()
+        self.kill()
 
-    def join(self, timeout=None):
+    def kill(self, timeout=None):
         """ function to terminate the thread (softly)
         :param timeout: not implemented yet
         :return: None
@@ -149,7 +149,7 @@ class PostprocessingWorker(threading.Thread):
         if (self.debug):
             print("PP: got kill request for thread")
         self.stopRequest.set()
-        super(PostprocessingWorker, self).join(timeout)
+        super(PostprocessingWorker, self).join()
 
     def getIDfromTrace(self, file_path):
         path, filename = os.path.split(file_path)

@@ -111,13 +111,13 @@ class DataCollector2(object):
 
     def collectData(self):
         experiments = self.getExperiments()
-        
         print "I found the following experiments: \n", [exp[0] for exp in experiments]
         if os.path.exists(self.outputFile):
 	    os.remove(self.outputFile)
         self.printHeaders() 
         pool = multiprocessing.Pool(multiprocessing.cpu_count() - 1)
-        features = [ feature for exp in pool.map(self.processExp, experiments) for feature in exp ]
+        features = [ feature for exp in pool.map(self.processExp, experiments)  for feature in exp]
+        #features = [feature for exp in experiments for feature in self.processExp(exp)]
         self.writeFeatures(features)
 
         print "wrote {} lines to {}".format(len(features), self.outputFile)

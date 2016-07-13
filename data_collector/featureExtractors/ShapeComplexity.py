@@ -6,10 +6,8 @@ import numpy as np
 
 class ShapeComplexity(FeatureExtractorAbstract):
     
-    PCAvector = np.array([ 0.42237685, 0.65776793, 0.62364986])
-
     def getCSVheader(self):
-        return ['hullRatio','triangles', 'limbs', 'shapeComplexity']
+        return ['hullRatio','triangles', 'limbs']
 
     def extract(self, args):
         if args['voxelBefore'].isValid:
@@ -22,12 +20,7 @@ class ShapeComplexity(FeatureExtractorAbstract):
         ratio, triangles = self.calc_complexity(dnaMatrix)
         limbs = self.calc_limbs(dnaMatrix)
 
-        triangles_norm = (triangles - 12) / (70 - 12)    # Normalization
-        limbs_norm = (limbs - 1) / (5 - 1)               # Normalization
-
-        shapeComplexity = np.dot(self.PCAvector,np.array([ratio, triangles_norm, limbs_norm]))
-
-        return [ratio, triangles, limbs, shapeComplexity]
+        return [ratio, triangles, limbs]
 
     def volume_hull(self, hull):
         def tetrahedron_volume(a, b, c, d):
@@ -40,9 +33,7 @@ class ShapeComplexity(FeatureExtractorAbstract):
                                      tets[:, 2], tets[:, 3]))
     
     def create_points(self, points, dnaMatrix):
-        tmp = []
         new_points = set()         
-        dnaMatrix = dnaMatrix.astype(bool)
         for x,y,z in points:
             new_points.add((x+0.5, y+0.5, z+0.5))
             new_points.add((x+0.5, y+0.5, z-0.5))
@@ -58,20 +49,13 @@ class ShapeComplexity(FeatureExtractorAbstract):
 
     def calc_complexity(self, dnaMatrix):
         points = np.squeeze(np.dstack((dnaMatrix.nonzero())))
-        new_points = self.create_points(points, dnaMatrix)
+        new_points = self.create_points(points)
         hull = ConvexHull(new_points, qhull_options='FA')
         volume = self.volume_hull(hull)
         ratio = 1-(len(points)/volume)
         triangles = len(hull.simplices)
-        print ratio, volume, len(points)
-        for simplex in hull.simplices:
-            for i in simplex:
-                for p in list(hull.points[i]):
-		    print p,
-                print '\t',
-            print
         if ratio < 0:
-            raise ValueError
+            return 0, triangles
         return ratio, triangles
 
 

@@ -74,6 +74,7 @@ class DataCollector2(object):
             TissueComplexity(),
             Birthtime(),
             Cost(),
+            Symmetry(),
         ]
         self.pickleLocation = os.path.dirname(
             os.path.realpath(__file__)) + os.path.sep + "progress.pickle"
@@ -104,7 +105,7 @@ class DataCollector2(object):
             args['indiv'] = indiv
             args['voxelBefore'], args['voxelAfter'] = get_voxels(args)
             args['tracesBefore'], args['tracesAfter'] = get_traces(args)
-            features.append( self.getFeatures(args) )
+	    features.append( self.getFeatures(args) )
             self.printExperimentProgress(min(len(individuals), self.limit), count)
         return features
 

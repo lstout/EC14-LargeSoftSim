@@ -10,4 +10,4 @@ from ShapeComplexity import ShapeComplexity
 from TissueComplexity import TissueComplexity
 from Birthtime import Birthtime
 from Cost import Cost
-
+from Symmetry import Symmetry

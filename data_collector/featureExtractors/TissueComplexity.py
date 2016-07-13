@@ -10,18 +10,18 @@ def calc_tissue_complexity(vd):
     if not vd.isValid:
             return 'NA'
     dnaMatrix = vd.getDNAmatrix().astype(int)
-    return tc(dnaMatrix)
+    return tissue_complexity(dnaMatrix)
 
-def tc(matrix):
+def tissue_complexity(matrix):
     H = 0
-    total = matrix.size
-    for i in range(5):
-        count = (matrix == i).sum()
-        p_i = count/total
-        if p_i == 0:
-            H -= 0
-        else:
-            H -= p_i * math.log(p_i,2)
+    total = (matrix > 0).sum()
+    
+    for i in range(1,5):    
+        count1 = (matrix == i).sum()
+        p1 = count1/total
+        if p1 > 0:
+            H -= p1 * math.log(p1,2)
+    
     return H
 
         
@@ -37,7 +37,7 @@ def mean_tissue_complexity(vd):
         subM = dnaMatrix[x:x+stepSize,y:y+stepSize,z:z+stepSize]
         if not np.any(subM > 0):
             continue
-        comps.append(tc(subM))
+        comps.append(tissue_complexity(subM))
 
     return sum(comps)/len(comps)
 

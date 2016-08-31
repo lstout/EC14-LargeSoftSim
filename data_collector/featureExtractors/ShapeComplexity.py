@@ -32,7 +32,7 @@ class ShapeComplexity(FeatureExtractorAbstract):
         return np.sum(tetrahedron_volume(tets[:, 0], tets[:, 1],
                                      tets[:, 2], tets[:, 3]))
     
-    def create_points(self, points, dnaMatrix):
+    def create_points(self, points):
         new_points = set()         
         for x,y,z in points:
             new_points.add((x+0.5, y+0.5, z+0.5))
@@ -44,6 +44,7 @@ class ShapeComplexity(FeatureExtractorAbstract):
             new_points.add((x-0.5, y-0.5, z+0.5))
             new_points.add((x-0.5, y-0.5, z-0.5))
         
+        new_points = [ list(p) for p in new_points ] 
         new_points = np.array(new_points)
         return new_points
 

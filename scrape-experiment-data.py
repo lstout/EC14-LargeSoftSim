@@ -117,8 +117,8 @@ class DataCollector2(object):
 	    os.remove(self.outputFile)
         self.printHeaders() 
         pool = multiprocessing.Pool(multiprocessing.cpu_count() - 1)
-        features = [ feature for exp in pool.map(self.processExp, experiments)  for feature in exp]
-        #features = [feature for exp in experiments for feature in self.processExp(exp)]
+        #features = [ feature for exp in pool.map(self.processExp, experiments)  for feature in exp]
+        features = [feature for exp in experiments for feature in self.processExp(exp)]
         self.writeFeatures(features)
 
         print "wrote {} lines to {}".format(len(features), self.outputFile)
